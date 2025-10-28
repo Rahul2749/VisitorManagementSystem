@@ -1,0 +1,56 @@
+﻿@inject IVDataService VDataService
+@inject NavigationManager NavigationManager
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<!-- Modal -->
+<div class="modal fade" id="@GetModalId(visitingDetails)" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">@title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" @onclick="ApproveBtn" class="btn btn-primary" data-bs-dismiss="modal">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+    [Parameter]
+    public VisitingDetailsModel? visitingDetails { get; set; }
+    
+
+
+
+    private string title = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+       
+        title = $"Are you sure to Approve {visitingDetails?.VisitorId}?";
+        
+    }
+
+    public static string GetModalId(VisitingDetailsModel? vd)
+    {
+        ArgumentNullException.ThrowIfNull(vd);
+
+        return $"approveModel-{vd.Id}";
+
+
+    }
+
+    private async Task ApproveBtn()
+    {
+        await VDataService.UpdateVisitingDetailsDataByID(visitingDetails!.Id);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        //NavigationManager.Refresh();
+    }
+
+}

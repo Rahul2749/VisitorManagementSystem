@@ -1,0 +1,9 @@
+﻿@VisitorManagementSystem_HostAddress = https://localhost:7265
+
+GET {{VisitorManagementSystem_HostAddress}}/api/showdata
+
+###
+
+@searchText=string
+GET {{VisitorManagementSystem_HostAddress}}/api/visitor/Search/9890185665
+###

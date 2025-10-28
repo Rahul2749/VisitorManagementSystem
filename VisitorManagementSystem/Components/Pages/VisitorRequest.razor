@@ -1,0 +1,907 @@
+﻿@page "/visitorRequest"
+
+@using MailKit.Net.Smtp
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin, User")]
+
+@inject IVDataService VDataService
+@inject IJSRuntime JS
+
+@using Microsoft.AspNetCore.Authorization
+@using MimeKit
+@using VisitorManagementSystem.Components.Pages.Shared
+@using VisitorManagementSystem.Data
+@inject NavigationManager NavigationManager
+
+@inject VMSDbContext vmsDbContext
+
+
+
+
+@rendermode InteractiveServer
+
+
+
+<style>
+    .table-responsive {
+        /*max-height: 370px;*/
+        @*min-height: 85vh;
+        max-height: 85vh;*@
+        /* max-width: 1100px;*/
+    }
+
+    thead {
+        position: sticky;
+        top: -1px;
+        background-color: white;
+        font-size: 14px;
+    }
+
+    .table-condensed {
+        font-size: 12px;
+    }
+
+    .fontSize11 {
+        font-size: 11px;
+        font-weight: bold;
+    }
+
+    /* CSS */
+    .button-88 {
+        display: flex;
+        align-items: center;
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 11px;
+        padding: 0.7em 1.4em 0.7em 1.1em;
+        color: white;
+        background: #ad5389;
+        background: linear-gradient(0deg, rgba(20,167,62,1) 0%, rgba(102,247,113,1) 100%);
+        border: none;
+        box-shadow: 0 0.7em 1.5em -0.5em #14a73e98;
+        letter-spacing: 0.05em;
+        border-radius: 20em;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+        .button-88:hover {
+            box-shadow: 0 0.5em 1.5em -0.5em #14a73e98;
+        }
+
+        .button-88:active {
+            box-shadow: 0 0.3em 1em -0.5em #14a73e98;
+        }
+
+
+
+
+</style>
+
+
+<script>
+    @*$(document).ready(function () {
+        $(".toast").toast('show');
+        });*@
+
+        function startToastMsg() {
+            $(".toast").toast('show');
+        }
+    function showModal() {
+        var modal = document.getElementById('staticBackdrop');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function hideModal() {
+        var modal = document.getElementById('staticBackdrop');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+
+
+    function showModal1() {
+        var modal = document.getElementById('staticBackdrop1');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function hideModal1() {
+        var modal = document.getElementById('staticBackdrop1');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+
+</script>
+
+<style>
+    .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .float-right {
+        margin-left: auto;
+    }
+
+    .float-left {
+        margin-right: auto;
+    }
+
+
+    .loader {
+        position: relative;
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+        animation: animate 1.2s linear infinite;
+    }
+
+    @@keyframes animate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loader span {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+    }
+
+    .loader-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 7%;
+        z-index: 1000; /* make sure it's on top of other elements */
+    }
+
+    .loader span:nth-child(1) {
+        filter: blur(5px);
+    }
+
+    .loader span:nth-child(2) {
+        filter: blur(10px);
+    }
+
+    .loader span:nth-child(3) {
+        filter: blur(25px);
+    }
+
+    .loader span:nth-child(4) {
+        filter: blur(50px);
+    }
+
+    .loader:after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        background: #f1f1f1;
+        border: solid white 10px;
+        border-radius: 50%;
+    }
+
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* adjust the opacity to your liking */
+        z-index: 1000; /* make sure it's on top of everything else */
+    }
+
+
+
+    .downloadText {
+        position: relative;
+        font-family: sans-serif;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        overflow: hidden;
+        background: linear-gradient(90deg, #000, #fff, #000);
+        background-repeat: no-repeat;
+        background-size: 80%;
+        animation: animateP 3s linear infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: rgba(255, 255, 255, 0);
+    }
+
+    @@keyframes animateP {
+        0% {
+            background-position: -500%;
+        }
+
+        100% {
+            background-position: 500%;
+        }
+    }
+</style>
+<PageTitle>
+    Visitor Request
+</PageTitle>
+@if (processing == true)
+{
+    <div class="overlay" />
+    <div class="loader-container">
+        <div class="loader">
+
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="loader-container">
+        <p class="downloadText">Processing...</p>
+    </div>
+}
+<!-- Begin Page Content -->
+<div class="container-fluid">
+    <div>
+        <h4 class="h3 mb-0 text-gray-800" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif">Visitor Requests</h4>
+    </div>
+
+
+    <div class="row">
+
+        <div class="table-responsive col-xl-12 col-md-12 mb-sm-12 vh-75">
+            <div class="col-sm-12 mr-1">
+                @if (combinedData == null)
+                {
+                    <span>Loading...</span>
+                }
+                else if (combinedData.Count == 0)
+                {
+                    <span>No Data Found.</span>
+                }
+                else
+                {
+
+                    <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5 align-middle table-condensed">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Visitor Name</th>
+
+                                <th>Mob</th>
+                                <th>Visit Date</th>
+                                <th>Visit Time</th>
+                                <th>Dur</th>
+                                <th>To Date</th>
+                                <th>Dept</th>
+                                <th>To Visit</th>
+                                
+                                <th>Purpose</th>
+                                <th>Approval</th>
+                               
+                                <th>CheckIn</th>
+                                <th>CheckOut</th>
+                                <!-- <th>Visitor Photo</th> -->
+                            </tr>
+                        </thead>
+                        <tbody class="table-group-divider">
+                            @foreach (var vd in combinedData.OrderByDescending(x => x.VisitingDetails.VisitDate))
+                            {
+
+                                
+                                if (vd.VisitingDetails.ApprovedBy == userName)
+                                {
+                                    <tr>
+                                        @{
+                                            var fd = fcombinedData.FirstOrDefault(x => x.FavoriteData.VisitorId == vd.VisitingDetails.VisitorId);
+                                        }
+                                        @if(fd != null){
+                                            @if(fd.FavoriteData.Favorite == true)
+                                            {
+                                                heartColor = "#ff0000";
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-9">@vd.VisitorData.FirstName @vd.VisitorData.LastName</div><div class="col-2">
+                                                            
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" stroke="#0000FF" stroke-width="0.2" fill="@heartColor" class="bi bi-star-fill" viewBox="0 0 16 16" type="button" @onclick="() => AddToFav(vd.VisitorData.VisitorId)">
+                                                                <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                heartColor = "#ffffff";
+                                                <td>
+                                                    <div class="row">
+                                                        <div class="col-9">@vd.VisitorData.FirstName @vd.VisitorData.LastName</div><div class="col-2">
+
+                                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" stroke="#0000FF" stroke-width="0.2" fill="@heartColor" class="bi bi-star-fill" viewBox="0 0 16 16" type="button" @onclick="() => AddToFav(vd.VisitorData.VisitorId)">
+                                                                <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" />
+                                                            </svg>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            heartColor = "#ffffff";
+                                            <td>
+                                                <div class="row">
+                                                    <div class="col-9">@vd.VisitorData.FirstName @vd.VisitorData.LastName</div><div class="col-2">
+
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" stroke="#0000FF" stroke-width="0.2" fill="@heartColor" class="bi bi-star-fill" viewBox="0 0 16 16" type="button" @onclick="() => AddToFav(vd.VisitorData.VisitorId)">
+                                                            <path d="M3.612 15.443c-.386.198-.824-.149-.746-.592l.83-4.73L.173 6.765c-.329-.314-.158-.888.283-.95l4.898-.696L7.538.792c.197-.39.73-.39.927 0l2.184 4.327 4.898.696c.441.062.612.636.282.95l-3.522 3.356.83 4.73c.078.443-.36.79-.746.592L8 13.187l-4.389 2.256z" />
+                                                        </svg>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        }
+
+                                        <td>@vd.VisitorData.MobileNo</td>
+                                            
+                                        
+                                        
+                                        <td>@vd.VisitingDetails.VisitDate</td>
+                                        <td>@vd.VisitingDetails.VisitTime</td>
+                                        <td>@vd.VisitingDetails.Duration</td>
+                                        <td>@vd.VisitingDetails.ToDate</td>
+                                       
+                                        @foreach (var dept in dData)
+                                        {
+                                            if (vd.VisitingDetails.CompanyDepartment == dept.DeptId)
+                                            {
+                                                <td>@dept.DeptName</td>
+                                            }
+                                        }
+                                        <td>@vd.VisitingDetails.ApprovedBy</td>
+                                        
+                                        <td>@vd.VisitingDetails.Purpose</td>
+                                        <td>
+                                            @if (vd.VisitingDetails.Approval == "Approved")
+                                            {
+                                                <div>Approved</div>
+
+                                            }
+                                            else if (vd.VisitingDetails.SecurityApproval == "Yes")
+                                            {
+                                                <div>Security Approved</div>
+                                            }
+                                            else if (vd.VisitingDetails.Approval == "Cancelled")
+                                            {
+                                                <div>Cancelled</div>
+                                            }
+                                            else
+                                            {
+                                                <div class="d-flex">
+                                                    <button type="button" class="button-88 btn btn-primary" data-bs-toggle="modal" @onclick="() => ModalForApprove(vd.VisitingDetails.Id)">Approve</button>
+                                                    <img src="/images/redCross.png" height="25px" width="25px" class="mx-3" role="button" @onclick="() => ModalForCancel(vd.VisitingDetails.Id)" />
+                                                </div>
+                                            }
+
+                                        </td>
+                                        @foreach (var vt in vTransactions!)
+                                        {
+                                            @if (vd.VisitingDetails?.VisitorId == vt.VisitorId && vd.VisitingDetails.VisitDate >= vt.Date && vd.VisitingDetails.VisitDate <= vt.Date)
+                                            {
+                                                
+                                                if (vt.CheckIn != "")
+                                                {
+                                                    <td class="text-dark fw-bold">@vt.CheckIn</td>
+                                                }
+                                                if (vt.CheckOut != "")
+                                                {
+                                                    <td class="text-danger fw-bold">@vt.CheckOut</td>
+                                                }
+                                            }
+                                        }
+                                       
+
+                                      @*   <Approval visitingDetails="@vd.VisitingDetails" />
+                                        <ApprovalCancellation visitingDetails="@vd.VisitingDetails" /> *@
+                                      
+                                </tr> 
+                                }
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+
+
+    </div>
+
+
+
+</div>
+<!-- /.container-fluid -->
+<div class="toast-container top-0 end-0 p-3">
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000" > 
+        <div class="toast-header">
+            <img src="..." class="rounded me-2" alt="...">
+            <strong class="me-auto">Bootstrap</strong>
+            <small>11 mins ago</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            Hello, @userName!
+        </div>
+    </div>
+</div>
+
+@*---------------------------------------------------------------------------------------------------------------------------------------------*@
+
+
+<!------------------------------------------------------------------------------------Model Approve--------------------------------------------------------------->
+<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width: 400px !important;">
+        <div class="modal-content" style="background-color:#d3d3d3; border-radius: 0px !important;box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4) !important;">
+
+            <div class="modal-body px-5">
+                <div class="d-flex justify-content-between">
+
+                    <h6>  @title </h6>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="HideModel"></button>
+                </div>
+                <hr style="color:black" />
+                <div class="pb-3" style="font-family: 'Lato', sans-serif;">
+                    <label class="fs-5 form-check-label" style="font-family: 'Lato', sans-serif;">
+                        @* @if (_selectedReqFormModel is not null)
+                        {
+                            <label>Requester Name <b>@_selectedReqFormModel.RequesterName</b> </label>
+                            <label>Model: <b>@_selectedReqFormModel.EngineFamily</b> </label>
+                        } *@
+                    </label><br />
+
+                </div>
+                <div style="display: flex;justify-content: flex-end;">
+                    <button type="button" class="button-14" data-bs-dismiss="modal" @onclick="ApproveBtn">Approve</button>
+
+                    <button type="button" class="button-14" data-bs-dismiss="modal" @onclick="HideModel">Back</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!------------------------------------------------------------------------------------Model Approve Cancel--------------------------------------------------------------->
+<div class="modal fade" id="staticBackdrop1" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm" style="max-width: 400px !important;">
+        <div class="modal-content" style="background-color:#d3d3d3; border-radius: 0px !important;box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4) !important;">
+
+            <div class="modal-body px-5">
+                <div class="d-flex justify-content-between">
+
+                    <h6>@title</h6>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="HideModel1"></button>
+                </div>
+                <hr style="color:black" />
+                <div class="pb-3" style="font-family: 'Lato', sans-serif;">
+                    <label class="fs-5 form-check-label" style="font-family: 'Lato', sans-serif;">
+                       @*  @if (_selectedReqFormModel is not null)
+                        {
+                            <label>Requester Name <b>@_selectedReqFormModel.RequesterName</b></label>
+                            <label>Model: <b>@_selectedReqFormModel.EngineFamily</b> </label>
+                        } *@
+                    </label><br />
+
+                </div>
+                <div style="display: flex;justify-content: flex-end;">
+                    <button type="button" class="button-14" data-bs-dismiss="modal" @onclick="CancelBtn">Cancel</button>
+
+                    <button type="button" class="button-14" data-bs-dismiss="modal" @onclick="HideModel1">Back</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+    [Parameter]
+    public int Id { get; set; }
+
+
+    List<VisitorMasterModel>? vData = null;
+    List<VisitingDetailsModel>? vDetails = null;
+    List<VisitorTransactionModel>? vTransactions = null;
+    List<FavVisitorsModel>? favDetails = null;
+    List<DeptData>? dData = null;
+
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    bool processing = false;
+    private string? userName;
+
+    string heartColor = "#ffffff";
+
+    private string title = string.Empty;
+
+    public class VisitorDataAndDetailsModel
+    {
+        public VisitorMasterModel VisitorData { get; set; }
+        public VisitingDetailsModel VisitingDetails { get; set; }
+        public FavVisitorsModel FavoriteData{ get; set; }
+    }
+    List<VisitorDataAndDetailsModel>? combinedData = null;
+    List<VisitorDataAndDetailsModel>? fcombinedData = null;
+
+
+    int empId;
+    string _empMail = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        var authenticationState = await authenticationStateTask;
+        var empData = vmsDbContext.Employee.Where(x => x.EmpEmail.ToLower() == authenticationState.User.Identity.Name).FirstOrDefault();
+        empId = empData.EmpId;
+        userName = empData.EmpName;
+        _empMail = empData.EmpEmail;
+
+
+        await FirstDataLoad();
+
+
+
+    }
+
+    private async Task FirstDataLoad()
+    {
+        vData = await VDataService.GetAllVisitorData();
+        vDetails = await VDataService.GetAllVisitingDetails();
+        vTransactions = await VDataService.GetAllVisitorTransactions();
+
+        if (vTransactions != null && vTransactions.Any())
+        {
+            
+            var filteredTransactions = vTransactions
+                .GroupBy(t => t.Date) 
+                .Select(g => g.OrderByDescending(t => t.Date).FirstOrDefault())
+                .ToList(); 
+
+          
+            vTransactions.Clear();
+            vTransactions.AddRange(filteredTransactions);
+        }
+        else
+        {
+            
+            vTransactions.Clear();
+        }
+
+
+
+        favDetails = await VDataService.GetFavVisitors();
+        favDetails = favDetails.Where(x => x.EmpId == empId).ToList();
+        dData = await VDataService.GetDeptData();
+
+        combinedData = vData.Join(vDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+        (vd, vdd) => new VisitorDataAndDetailsModel
+            {
+                VisitorData = vd,
+                VisitingDetails = vdd
+            }).OrderByDescending(x => x.VisitingDetails.RegistrationDate).ToList();
+
+        //     fcombinedData = vData
+        // .Join(vDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+        // (vd, vdd) => new { VisitorData = vd, VisitingDetails = vdd })
+        // .Join(favDetails, x => x.VisitorData.VisitorId, vd => vd.VisitorId,
+        // (x, vdd) => new VisitorDataAndDetailsModel
+        //     {
+        //         VisitorData = x.VisitorData,
+        //         VisitingDetails = x.VisitingDetails,
+        //         FavoriteData = vdd
+        //     })
+        // .ToList();
+
+        fcombinedData = vData.Join(favDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+       (vd, vdd) => new VisitorDataAndDetailsModel
+           {
+               VisitorData = vd,
+               FavoriteData = vdd
+           }).ToList();
+
+
+
+
+    }
+
+    // private async Task ApproveBtn(int id)
+    // {
+    //     await SendEmail(id);
+    //     await VDataService.UpdateVisitingDetailsDataByID(id);
+    //     NavigationManager.NavigateTo(NavigationManager.Uri, true);
+    // }
+    private async Task AddToFav(string vid)
+    {
+        processing = true;
+        _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        await VDataService.AddNewFavourite(vid, empId, true);
+
+        //await VDataService.UpdateVisitingDetailsDataByID(id);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+    }
+
+    private string ApproveVisitingModalId(VisitingDetailsModel vd)
+    {
+        //StateHasChanged();
+        return $"#{Approval.GetModalId(vd)}";
+
+    }
+    private string CancellationOfApproval(VisitingDetailsModel vd)
+    {
+        //StateHasChanged();
+        return $"#{ApprovalCancellation.GetModalCancelId(vd)}";
+
+    }
+
+
+    private string GetImageFormat(byte[] imageData)
+    {
+        if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
+        {
+            return "png";
+        }
+        else if (imageData[0] == 0xFF && imageData[1] == 0xD8)
+        {
+            return "jpeg";
+        }
+        else
+        {
+            return "jpeg";
+        }
+    }
+
+    private async Task startToast()
+    {
+        await JS.InvokeVoidAsync("startToastMsg");
+    }
+    string path = "https://www.clarke-energy.com/wp-content/uploads/2020/03/Rehlko-logo.png";
+    private async Task SendEmail(int id)
+    {
+        //-------------------------------Email to Approver------------------------------------To Visit--------------------\
+        var vID = vDetails.Where(x => x.Id == id).Select(y => y.VisitorId).FirstOrDefault();
+        var vDate = vDetails.Where(x => x.Id == id).Select(y => y.VisitDate).FirstOrDefault();
+        var visitorMail = vData.Where(x => x.VisitorId == vID).Select(y => y.Email).FirstOrDefault();
+        if (visitorMail.ToLower().Trim() == "na")
+        {
+            visitorMail = "RehlkoVMS@rehlko.com";
+        }
+        var mailMessage = new MimeMessage();
+
+        mailMessage.From.Add(new MailboxAddress("VMS", "RehlkoVMS@rehlko.com"));
+        mailMessage.To.Add(new MailboxAddress("VMS", visitorMail));
+
+
+        mailMessage.Subject = $"Rehlko Appointment Approval Status";
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $@"
+            <html>
+                <body>
+                    <p>Hello,</p>
+                    <p>Your request for appointment of date({vDate}) has been approved by {userName}</p>
+
+
+                    <p style='margin-top:1rem'>
+                        Thank You
+                    </p>
+                    <div style='text-align:center; width: 110; background-color: skyblue'>
+                        <img src={path} width='100' >
+                    </div>
+                    
+
+                    
+            </body>
+            </html>
+        ";
+
+        mailMessage.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
+        {
+            await client.ConnectAsync("mailhost.kohlerco.com", 25, MailKit.Security.SecureSocketOptions.StartTls);
+            // await client.AuthenticateAsync("rupali.awati@kohler.com", "joewomthjbxxgepm");
+            await client.SendAsync(mailMessage);
+            await client.DisconnectAsync(true);
+        }
+    }
+    private async Task SendEmailCancel(int id)
+    {
+        //-------------------------------Email to Approver------------------------------------To Visit--------------------\
+        var vID = vDetails.Where(x => x.Id == id).Select(y => y.VisitorId).FirstOrDefault();
+        var vDate = vDetails.Where(x => x.Id == id).Select(y => y.VisitDate).FirstOrDefault();
+        var visitorMail = vData.Where(x => x.VisitorId == vID).Select(y => y.Email).FirstOrDefault();
+        if (visitorMail.ToLower().Trim() == "na")
+        {
+            visitorMail = "RehlkoVMS@rehlko.com";
+        }
+
+        var mailMessage = new MimeMessage();
+
+        mailMessage.From.Add(new MailboxAddress("VMS", "RehlkoVMS@rehlko.com"));
+        mailMessage.To.Add(new MailboxAddress("VMS", visitorMail));
+
+
+        mailMessage.Subject = $"Rehlko Appointment Approval Status";
+
+
+        /*
+        mailMessage.Body = new TextPart("plain")
+        {
+
+        Text = $"Check Your Information- Name: {vData.Name}, Email: {vData.Email}, Comapny: {vData.Company}"
+    };*/
+
+        var bodyBuilder = new BodyBuilder();
+        bodyBuilder.HtmlBody = $@"
+            <html>
+                <body>
+                    <p>Hello,</p>
+                    <p>Your request for appointment of date({vDate}) has been cancelled by {userName}</p>
+                    <p>For more detail contact to approver.</p>
+
+
+                    <p style='margin-top:1rem'>
+                        Thank You
+                    </p>
+                    <div style='text-align:center; width: 110; background-color: skyblue'>
+                        <img src={path} width='100' >
+                    </div>
+                </body>
+            </html>
+        ";
+
+        mailMessage.Body = bodyBuilder.ToMessageBody();
+
+        using (var client = new SmtpClient())
+        {
+            await client.ConnectAsync("mailhost.kohlerco.com", 25, MailKit.Security.SecureSocketOptions.StartTls);
+            // await client.AuthenticateAsync("rupali.awati@kohler.com", "joewomthjbxxgepm");
+            await client.SendAsync(mailMessage);
+            await client.DisconnectAsync(true);
+        }
+    }
+
+
+
+    int _vdId = 0;
+
+
+    public async Task ModalForApprove(int vdId)
+    {
+        try
+        {
+            _vdId = vdId;
+
+            title = $"Are you sure to Approve {vDetails.Where(x => x.Id == vdId).Select(y => y.VisitorId).FirstOrDefault()}?";
+            await JS.InvokeVoidAsync("showModal");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+
+    }
+    public async Task ModalForCancel(int vdId)
+    {
+        try
+        {
+            _vdId = vdId;
+
+            title = $"Are you sure to Cancel {vDetails.Where(x => x.Id == vdId).Select(y => y.VisitorId).FirstOrDefault()}?";
+            await JS.InvokeVoidAsync("showModal1");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+
+    }
+
+    private async Task ApproveBtn()
+    {
+        processing = true;
+        _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        await SendEmail(_vdId);
+        await VDataService.UpdateVisitingDetailsDataByID(_vdId);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        //NavigationManager.Refresh();
+    }
+    private async Task CancelBtn()
+    {
+        processing = true;
+        _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        await SendEmailCancel(_vdId);
+        await VDataService.CancellationApproval(_vdId);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        //NavigationManager.Refresh();
+    }
+
+
+
+    protected async Task HideModel()
+    {
+        try
+        {
+            //NavigationManager.NavigateTo(NavigationManager.Uri, true);
+            await JS.InvokeVoidAsync("hideModal");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+
+    protected async Task HideModel1()
+    {
+        try
+        {
+
+            //NavigationManager.NavigateTo(NavigationManager.Uri, true);
+            await JS.InvokeVoidAsync("hideModal1");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+}
+

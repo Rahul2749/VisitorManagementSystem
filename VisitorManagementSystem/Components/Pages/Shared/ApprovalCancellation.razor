@@ -1,0 +1,56 @@
+﻿@inject IVDataService VDataService
+@inject NavigationManager NavigationManager
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+
+<!-- Modal -->
+<div class="modal fade" id="@GetModalCancelId(visitingDetails)" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content bg-gray-200" style="background-color: #E8E8E8">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">@title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No</button>
+                <button type="button" @onclick="CancelBtn" class="btn btn-primary" data-bs-dismiss="modal">Yes</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+
+
+    [Parameter]
+    public VisitingDetailsModel? visitingDetails { get; set; }
+    
+
+
+
+    private string title = string.Empty;
+
+    protected override async void OnParametersSet()
+    {
+       
+        title = $"Are you sure to Cancel {visitingDetails?.VisitorId}?";
+        
+    }
+
+    public static string GetModalCancelId(VisitingDetailsModel? vd)
+    {
+        ArgumentNullException.ThrowIfNull(vd);
+
+        return $"cancelModel-{vd.Id}";
+
+
+    }
+
+    private async Task CancelBtn()
+    {
+        await VDataService.CancellationApproval(visitingDetails!.Id);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        //NavigationManager.Refresh();
+    }
+
+}

@@ -1,0 +1,735 @@
+﻿
+@page "/emp-edit"
+@page "/emp-edit/{id:int}"
+@using System.ComponentModel.DataAnnotations
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Authorization
+
+@* @rendermode InteractiveServer *@
+@rendermode @(new InteractiveServerRenderMode(prerender: false))
+@inject NavigationManager NavigationManager
+
+@inject IVDataService VDataService
+
+@inject IJSRuntime JS
+
+@attribute [Authorize(Roles = "Admin")]
+
+
+
+<style>
+    .button-90 {
+        display: flex;
+        align-items: center;
+        font-family: inherit;
+        font-weight: 500;
+        font-size: 16px;
+        padding: 0.7em 1.4em 0.7em 1.1em;
+        color: black;
+        background: #87CEEB; /* Sky blue color */
+        background: linear-gradient(0deg, rgba(135,206,235,1) 0%, rgba(135,206,235,1) 100%); /* Gradient with sky blue */
+        border: none;
+        box-shadow: 0 0.7em 1.5em -0.5em rgba(135, 206, 250, 0.5); /* Updated shadow color */
+        letter-spacing: 0.05em;
+        border-radius: 20em;
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+    }
+
+        .button-90:hover {
+            box-shadow: 0 0.5em 1.5em -0.5em #216974; /* Updated shadow color on hover */
+        }
+
+        .button-90:active {
+            box-shadow: 0 0.3em 1em -0.5em #216974; /* Updated shadow color on active */
+        }
+
+    .dropdown-menu {
+        max-height: 200px; /* adjust the height as needed */
+        overflow-y: auto;
+    }
+
+
+</style>
+
+
+
+<style>
+    .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .float-right {
+        margin-left: auto;
+    }
+
+    .float-left {
+        margin-right: auto;
+    }
+
+
+    .loader {
+        position: relative;
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+        animation: animate 1.2s linear infinite;
+    }
+
+    @@keyframes animate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loader span {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+    }
+
+    .loader-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 7%;
+        z-index: 1000; /* make sure it's on top of other elements */
+    }
+
+    .loader span:nth-child(1) {
+        filter: blur(5px);
+    }
+
+    .loader span:nth-child(2) {
+        filter: blur(10px);
+    }
+
+    .loader span:nth-child(3) {
+        filter: blur(25px);
+    }
+
+    .loader span:nth-child(4) {
+        filter: blur(50px);
+    }
+
+    .loader:after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        background: #f1f1f1;
+        border: solid white 10px;
+        border-radius: 50%;
+    }
+
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* adjust the opacity to your liking */
+        z-index: 1000; /* make sure it's on top of everything else */
+    }
+
+
+
+    .downloadText {
+        position: relative;
+        font-family: sans-serif;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        overflow: hidden;
+        background: linear-gradient(90deg, #000, #fff, #000);
+        background-repeat: no-repeat;
+        background-size: 80%;
+        animation: animateP 3s linear infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: rgba(255, 255, 255, 0);
+    }
+
+    @@keyframes animateP {
+        0% {
+            background-position: -500%;
+        }
+
+        100% {
+            background-position: 500%;
+        }
+    }
+</style>
+
+<PageTitle>
+    Admin
+</PageTitle>
+
+@if (processing == true)
+{
+    <div class="overlay" />
+    <div class="loader-container">
+        <div class="loader">
+
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="loader-container">
+        <p class="downloadText">Processing...</p>
+    </div>
+}
+<div class="d-flex align-items-center">
+    <label class="mr-2"><b>Search Employee to Update:</b></label>
+    <div class="dropdown" style="margin-right:0.5%">
+        <input type="email" class="form-control mx-3" @bind="searchEmail" @bind:event="oninput" placeholder="Search by name/ko/mail" style="width: 18rem;" data-bs-toggle="dropdown" aria-expanded="false" />
+        <ul class="dropdown-menu">
+
+            @if (eDataList == null)
+            {
+                <span>Loading...</span>
+            }
+            else if (eDataList.Count == 0)
+            {
+                <span>No Data Found.</span>
+            }
+            else
+            {
+                @foreach (var e in filteredEmp)
+                {
+                    <li><button role="button" class="btn btn-link" @onclick="() => DropDownFind(e.EmpEmail)">@e.EmpName</button></li>
+                }
+            }
+
+
+
+
+            @*  <li><a class="" href="logout">Logout</a></li> *@
+
+        </ul>
+    </div>
+    <button type="button" class="btn btn-primary" @onclick="SearchEmp">Search</button>
+</div>
+<div class="mt-3">
+    <EditForm Model="eData" OnValidSubmit="@HandleSubmit" FormName="newempadd" class="row g-2">
+        <DataAnnotationsValidator></DataAnnotationsValidator>
+        <div style="background-color:aliceblue"><h4 style="text-align:left; padding: 3px; color: black">Add New Employee</h4></div>
+        <div class="">
+            <div class="row mt-1">
+                <div class="col-md-3">
+                    <label for="name" class="form-label">First Name <label style="color: red">*</label></label>
+                    <InputText @bind-Value="eData.EmployeeFirstName" type="text" class="form-control" id="name" style="text-transform:uppercase" />
+                    <ValidationMessage For="() => eData.EmployeeFirstName" />
+                </div>
+                <div class="col-md-3">
+                    <label for="lastname" class="form-label">Last Name <label style="color: red">*</label></label>
+                    <InputText @bind-Value="eData.EmployeeLastName" type="text" class="form-control" id="lasname" style="text-transform:uppercase" />
+                    <ValidationMessage For="() => eData.EmployeeLastName" />
+                </div>
+                <div class="col-md-3">
+                    <label for="kono" class="form-label">KO No. <label style="color: red">*</label></label>
+                    <InputText @bind-Value="eData.KO" type="text" class="form-control" id="kono" style="text-transform:uppercase" />
+                    <ValidationMessage For="() => eData.KO" />
+                </div>
+
+
+            </div>
+            <div class="row mt-1">
+
+                <div class="col-md-3">
+                    <label for="lastname" class="form-label">Email <label style="color: red">*</label></label>
+                    <InputText @bind-Value="eData.EmpMail" type="text" class="form-control" id="empmail" />
+                    <ValidationMessage For="() => eData.EmpMail" />
+                </div>
+
+
+                <div class="col-md-3">
+                    <label for="lastname" class="form-label">Mobile <label style="color: red">*</label></label>
+                    <InputText @bind-Value="eData.MobNo" type="number" class="form-control" id="mobno" />
+                    <ValidationMessage For="() => eData.MobNo" />
+                </div>
+
+                <div class="col-md-3">
+                    <label for="selectid" class="form-label">Select Department <label style="color: red">*</label></label>
+                    <InputSelect @bind-Value="eData.Dept" class="form-select">
+
+                        <option value="">
+                            Select Department...
+                        </option>
+                        @if (dData == null)
+                        {
+                            <span>Loading...</span>
+                        }
+                        else
+                        {
+                            @foreach (var dept in dData)
+                            {
+                                <option checked="@(eData!.Dept == dept.DeptId)"
+                                value=@dept.DeptId>
+                                    @dept.DeptName
+                                </option>
+                            }
+                        }
+
+
+                    </InputSelect>
+                    <ValidationMessage For="() => eData.Dept" />
+                </div>
+            </div>
+
+
+            <div class="row mt-1">
+
+
+                <div class="col-md-4">
+                    <label for="selectid" class="form-label">Select Country <label style="color: red">*</label></label>
+                    <InputSelect @bind-Value="country" class="form-select">
+
+                        <option value="">
+                            Select Country...
+                        </option>
+                        @if (countryList == null)
+                        {
+                            <span>Loading...</span>
+                        }
+                        else
+                        {
+                            @foreach (var cnt in countryList)
+                            {
+                                <option checked="@(country == cnt.CountryId)"
+                                value=@cnt.CountryId>
+                                    @cnt.CountryName
+                                </option>
+                            }
+                        }
+
+
+                    </InputSelect>
+                    <ValidationMessage For="() => eData.Dept" />
+                </div>
+
+                <div class="col-md-4">
+                    <label for="site" class="form-label">Site <label style="color: red">*</label></label>
+                    <InputSelect @bind-Value="eData.Site" class="form-select">
+
+                        <option value="">
+                            Select Site...
+                        </option>
+                        @if (companySite == null)
+                        {
+                            <span>Loading...</span>
+                        }
+                        else
+                        {
+                            @foreach (var site in companySite)
+                            {
+                                if (country == site.CountryId)
+                                {
+                                    <option checked="@(eData.Site == site.SiteId)"
+                                    value=@site.SiteId>
+                                        @site.SiteName
+                                    </option>
+                                }
+                            }
+                        }
+
+
+                    </InputSelect>
+
+                    <ValidationMessage For="() => eData.Site" />
+                </div>
+            </div>
+
+
+        </div>
+
+        <div class="">
+
+            <div class="row mt-1">
+
+
+                <div class="col-md-4">
+                    <label for="password" class="form-label">Password</label>
+                    <InputText @bind-Value="eData.Password" type="password" class="form-control" id="inputpass" placeholder="" />
+                    <ValidationMessage For="() => eData.Password" />
+                </div>
+                <div class="col-md-4">
+                    <label for="site" class="form-label">Role <label style="color: red">*</label></label>
+                    <br />
+
+                    <div type="text" class="form-control">
+                        <InputRadioGroup id="site" @bind-Value="eData.Role" class="form-control">
+                            <InputRadio Value="Admin1" class="custom-radio" /> Admin
+                            <InputRadio Value="Security" class="custom-radio" /> Security
+                            <InputRadio Value="User" class="custom-radio" /> User
+
+                        </InputRadioGroup>
+                    </div>
+
+                    <ValidationMessage For="() => eData.Role" />
+                </div>
+
+            </div>
+
+        </div>
+
+
+
+
+
+        <div class="col-md-12 btn-center d-flex">
+
+            @if (saveBtn == true)
+            {
+                <div class="pe-2">
+                    <button type="submit" class="button-90">Save</button>
+                </div>
+
+            }
+            @if (updateBtn == true)
+            {
+                <div>
+                    <button type="button" class="button-90" @onclick="UpdateEmp">Update</button>
+                </div>
+            }
+            <div>
+                <button type="button" class="btn button-90" @onclick="ClearForm">Clear</button>
+            </div>
+
+
+
+
+
+        </div>
+
+    </EditForm>
+</div>
+
+@*-----------------------------------------------------------------------------Toast *@
+<div class="toast-container top-0 end-0 p-3">
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000">
+        <div class="toast-header" style="background-color: #689268; color: floralwhite">
+            <img src="https://cdn3.iconfinder.com/data/icons/picons-weather/57/53_warning-512.png" height="15px" width="15px" class="rounded me-2" alt="...">
+            <strong class="me-auto">Here's a message!</strong>
+            <small>@DateTime.Now.ToShortTimeString()</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            <b>@toastMsg</b>
+        </div>
+    </div>
+</div>
+@code {
+
+    [Parameter]
+    public int? Id { get; set; }
+
+    string message = string.Empty;
+    int country = 1;
+    bool processing = false;
+    bool saveBtn = true;
+    bool updateBtn = false;
+    [SupplyParameterFromForm]
+    AddEmpModel eData { get; set; } = new AddEmpModel {};
+    EmpData empData { get; set; } = new EmpData {};
+    List<DeptData>? dData = null;
+    List<EmpData>? eDataList = null;
+    List<CountryModel>? countryList = null;
+    List<CompanySiteModel>? companySite = null;
+
+    public const string Admin1 = "Admin";
+    public const string User = "User";
+    public const string Security = "Security";
+
+    string toastMsg { get; set; } = string.Empty;
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (Id != null)
+        {
+            var result = await VDataService.GetEmpDataById((int)Id);
+            if (result != null){
+                // updateBtn = true;
+                // saveBtn = false;
+                // string[] nameParts = result.EmpName.Split(' ');
+
+                // eData.EmployeeFirstName = nameParts[0];
+                // eData.EmployeeLastName = nameParts[0];
+                // eData.KO = result.KO;
+                // eData.MobNo = result.EmpContactNo;
+                // eData.Dept = result.DeptId;
+                // eData.Site = result.SiteId;
+                // eData.Role = result.Role;
+                // eData.Password = result.Password;
+                // eData.EmpMail = result.EmpEmail;
+
+                await LoadData();
+                searchEmail = result.EmpEmail;
+                await SearchEmp();
+            }
+        }
+
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadData();
+
+    }
+
+    private async Task LoadData()
+    {
+        eDataList = await VDataService.GetEmpData();
+        dData = await VDataService.GetDeptData();
+        countryList = await VDataService.GetCountryList();
+        companySite = await VDataService.GetCompanySite();
+    }
+    private async Task HandleSubmit()
+    {
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        empData.EmpName = eData.EmployeeFirstName.Trim().ToUpper() +" "+ eData.EmployeeLastName.Trim().ToUpper();
+        empData.KO = eData.KO.ToLower();
+        empData.EmpEmail = eData.EmpMail;
+        empData.EmpContactNo = eData.MobNo;
+        empData.DeptId = eData.Dept;
+        empData.SiteId = eData.Site;
+        empData.Password = eData.Password;
+        empData.Role = eData.Role.Replace("1","");
+
+
+
+        var existingEmp = await VDataService.GetExistingEmp(empData.EmpEmail);
+
+        if (existingEmp == null)
+        {
+            await VDataService.AddNewEmpData(empData);
+            eData = new AddEmpModel { };
+            empData = new EmpData { };
+            country = 0;
+            processing = false;
+            toastMsg = "Employee Added...";
+
+            _ = InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+            await JS.InvokeVoidAsync("startToastMsg");
+        }
+        else
+        {
+            eData = new AddEmpModel { };
+            empData = new EmpData { };
+            processing = false;
+            toastMsg = "Employee already existed...";
+
+            _ = InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+            await JS.InvokeVoidAsync("startToastMsg");
+        }
+
+
+
+        empData = new EmpData { };
+
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+    }
+    async Task ClearForm()
+    {
+        eData = new AddEmpModel { };
+        empData = new EmpData { };
+        country = 0;
+        _ = InvokeAsync(() =>
+                       {
+                           StateHasChanged();
+                       });
+        message = string.Empty;
+    }
+
+    string searchEmail = string.Empty;
+    private List<EmpData> filteredEmp => eDataList!.Where(
+            e => e.EmpName!.Contains(searchEmail, StringComparison.OrdinalIgnoreCase) || e.EmpEmail!.Contains(searchEmail, StringComparison.OrdinalIgnoreCase) || e.KO!.Contains(searchEmail, StringComparison.OrdinalIgnoreCase)).ToList();
+
+    private async Task DropDownFind(string EmpEmail)
+    {
+        searchEmail = EmpEmail;
+        await SearchEmp();
+    }
+    private async Task SearchEmp()
+    {
+        var existingEmp = await VDataService.GetExistingEmp(searchEmail);
+        if(existingEmp != null)
+        {
+            toastMsg = "Employee Found...";
+
+            await JS.InvokeVoidAsync("startToastMsg");
+            string[] nameParts = existingEmp.EmpName.Split(' ');
+            eData.EmployeeFirstName = nameParts[0];
+            eData.EmployeeLastName = nameParts[1];
+            eData.KO = existingEmp.KO;
+            eData.EmpMail = existingEmp.EmpEmail;
+            eData.MobNo = existingEmp.EmpContactNo;
+            eData.Dept = existingEmp.DeptId;
+            eData.Site = existingEmp.SiteId;
+            eData.Password = existingEmp.Password;
+            eData.Role = existingEmp.Role;
+
+            updateBtn = true;
+            saveBtn = false;
+            _ = InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+        }
+        else
+        {
+            toastMsg = "Employee Not Found...";
+
+            _ = InvokeAsync(() =>
+                        {
+                            StateHasChanged();
+                        });
+            await JS.InvokeVoidAsync("startToastMsg");
+        }
+    }
+
+    private async Task UpdateEmp()
+    {
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        empData.EmpName = eData.EmployeeFirstName.Trim().ToUpper() + " " + eData.EmployeeLastName.Trim().ToUpper();
+        empData.KO = eData.KO.ToLower();
+        empData.EmpEmail = eData.EmpMail;
+        empData.EmpContactNo = eData.MobNo.ToString();
+        empData.DeptId = eData.Dept;
+        empData.SiteId = eData.Site;
+        empData.Password = eData.Password;
+        empData.Role = eData.Role.Replace("1", "");
+
+
+
+
+
+        await VDataService.UpdateEmpData(empData, searchEmail);
+        eData = new AddEmpModel { };
+        empData = new EmpData { };
+        
+        processing = false;
+        toastMsg = "Profile Updated...";
+        updateBtn = false;
+        saveBtn = true;
+        _ = InvokeAsync(() =>
+                    {
+                        StateHasChanged();
+                    });
+        await JS.InvokeVoidAsync("startToastMsg");
+
+      
+    }
+
+    public class AddEmpModel
+    {
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please provide First Name")]
+        public string? EmployeeFirstName { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please provide Last Name")]
+        public string? EmployeeLastName { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please provide KO No.")]
+        public string? KO { get; set; }
+
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please provide Email")]
+        public string? EmpMail { get; set; }
+
+        [Required(ErrorMessage = "Please Enter Mobile Number"), Phone]
+        [StringLength(10, ErrorMessage = "Invalid Mobile Number"), MinLength(10, ErrorMessage = "Invalid Mobile Number")]
+        public string? MobNo { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please select Department")]
+        public int Dept { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please Select Site")]
+        public int Site { get; set; }
+
+        [Required]
+        [PasswordValidation]
+        public string? Password { get; set; }
+
+        [Required(AllowEmptyStrings = false, ErrorMessage = "Please Select Role")]
+        public string? Role { get; set; }
+    }
+
+
+    public class PasswordValidationAttribute : ValidationAttribute
+    {
+    protected override ValidationResult IsValid(object value, ValidationContext validationContext)
+    {
+        var password = value as string;
+
+        if (string.IsNullOrWhiteSpace(password) || password.Length < 8)
+        {
+            return new ValidationResult("Password must be at least 8 characters long.");
+        }
+
+        if (!Regex.IsMatch(password, @"[A-Z]"))
+        {
+            return new ValidationResult("Password must contain at least one uppercase letter.");
+        }
+
+        if (!Regex.IsMatch(password, @"[a-z]"))
+        {
+            return new ValidationResult("Password must contain at least one lowercase letter.");
+        }
+
+        if (!Regex.IsMatch(password, @"[0-9]"))
+        {
+            return new ValidationResult("Password must contain at least one digit.");
+        }
+
+        if (!Regex.IsMatch(password, @"[!@#$%^&*(),.?""':;{}|<>]"))
+        {
+            return new ValidationResult("Password must contain at least one special character.");
+        }
+
+        if (password.Contains(" "))
+        {
+            return new ValidationResult("Password must not contain spaces.");
+        }
+
+        return ValidationResult.Success;
+    }
+    }
+
+}

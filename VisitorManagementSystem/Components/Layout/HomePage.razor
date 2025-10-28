@@ -1,0 +1,102 @@
+﻿@inherits LayoutComponentBase
+
+
+@using VisitorManagementSystem.Components.Pages.Shared
+@using VisitorManagementSystem.Data
+@inject IVDataService VDataService
+@inject VMSDbContext vmsDbContext
+
+
+<div class="page">
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="sidebar">
+                <NavMenu />
+             </div>
+        </Authorized>
+    </AuthorizeView>
+
+    <main>
+        
+        <div class="top-row">
+
+
+           
+            <AuthorizeView>
+                <NotAuthorized>
+                    <h6 class="start-aligned" style="color:antiquewhite">Please Login!</h6>
+                </NotAuthorized>
+                <Authorized>
+                    <h6 class="start-aligned" style="color:antiquewhite">Welcome! <b><!--@context.User.Identity.Name--> @userName</b></h6>
+                </Authorized>
+            </AuthorizeView>
+            
+             <AuthorizeView>
+                <Authorized>@*
+                    <form class="d-flex">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>*@
+                </Authorized>
+            </AuthorizeView>
+
+            
+           @*  <a href="https://kohlerenergy.com/" target="_blank" style="color: #fdfff5">Help</a> *@
+        @*     <UserManual /> *@
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="/login" style="color: #fdfff5">Login</a>
+
+                </NotAuthorized>
+                <Authorized>
+                    <a href="/logout" style="color: #fdfff5">Logout</a>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+
+       
+
+
+       
+        
+    </main>
+
+   
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+
+@code{
+    
+    
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+
+    private string? userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        var authenticationState = await authenticationStateTask;
+        var empData = vmsDbContext.Employee.Where(x => x.EmpEmail.ToLower() == authenticationState.User.Identity.Name).FirstOrDefault();
+        if(empData is not null)
+        {
+            userName = empData!.EmpName;
+        }
+        
+    }
+}

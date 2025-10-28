@@ -1,0 +1,3569 @@
+﻿@page "/registervisitor"
+@page "/registervisitor/{id:int}"
+@layout VisitorManagementSystem.Components.Layout.RegLayout
+@using Microsoft.AspNetCore.Authorization
+@*@attribute [Authorize(Roles = "Admin, User")]*@
+@rendermode InteractiveServer
+@inject NavigationManager NavigationManager
+
+@inject IVDataService VDataService
+
+@inject IJSRuntime JS
+
+@inject IHttpClientFactory _httpClientFactory
+
+
+
+@using MailKit.Net.Smtp
+@using MimeKit
+
+@using SixLabors.Fonts;
+@using SixLabors.ImageSharp;
+@using SixLabors.ImageSharp.Drawing;
+@using SixLabors.ImageSharp.Drawing.Processing;
+@using SixLabors.ImageSharp.Formats.Jpeg
+@using SixLabors.ImageSharp.PixelFormats;
+@using SixLabors.ImageSharp.Processing;
+
+@using System.Net.Http
+@using System.IO
+@using System.Security.Claims
+@using System.Text.RegularExpressions
+@using VisitorManagementSystem.Models.CarriedMtrlModel
+
+<style>
+    /* From Uiverse.io by bandirevanth */
+    .custom-btn {
+    width: 130px;
+    height: 40px;
+    color: #fff;
+    border-radius: 5px;
+    padding: 10px 25px;
+    font-family: 'Lato', sans-serif;
+    font-weight: 500;
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+    display: inline-block;
+    box-shadow: inset 2px 2px 2px 0px rgba(255,255,255,.5), 7px 7px 20px 0px rgba(0,0,0,.1), 4px 4px 5px 0px rgba(0,0,0,.1);
+    outline: none;
+    }
+
+    .btn-1 {
+    background: rgb(6,14,131);
+    background: linear-gradient(0deg, rgba(6,14,131,1) 0%, rgba(12,25,180,1) 100%);
+    border: none;
+    }
+
+    .btn-1:hover {
+    background: rgb(0,3,255);
+    background: linear-gradient(0deg, rgb(0, 17, 255) 0%, rgba(2,126,251,1) 100%);
+    }
+</style>
+<style>
+
+    * {
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+    }
+
+    body{
+
+    background-image: url('rehlkologo/rehlko_solid_background 3.png');
+    }
+
+    .bezel-less {
+    /* Remove default border and background */
+    border: none;
+    background-image: linear-gradient(to right, #808080, #808080);
+    /* Add custom styles */
+    padding: 5px 7px;
+    font-size: 12px;
+    font-weight: bold;
+    color: ghostwhite;
+    cursor: pointer;
+    /* Add a slight shadow to give it some depth */
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    /* Make it rounded */
+
+    }
+
+    .bezel-less:hover{
+    background-image: linear-gradient(to right, #808080, #808080);
+    color: #ccc;
+    }
+
+    .form-control{
+    border-radius: 0;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-bottom-color: darkgray;
+    border-color: darkgray;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+    .form-select {
+    border-radius: 0;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-top-width: 1px;
+    border-bottom-width: 1px;
+    border-bottom-color: darkgray;
+
+    border-color: darkgrey;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+    }
+
+    .form-select:hover {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+    .form-control:hover{
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .btn-primary {
+    border-radius: 0;
+    background-color: brown;
+    border: none;
+    }
+
+    .btn-center {
+    display: flex;
+    justify-content: center;
+    }
+
+    .custom-radio {
+    accent-color: red; /* Change this to the desired color */
+    }
+
+    .custom-radio:checked {
+    accent-color: blue;
+    }
+
+
+
+    .img-thumbnail {
+    width: 110px;
+    height: 110px;
+    }
+
+    /* CSS */
+    .button-29 {
+    align-items: center;
+    appearance: none;
+    background-image: radial-gradient(100% 100% at 100% 0, #5adaff 0, #5468ff 100%);
+    border: 0;
+    border-radius: 6px;
+    box-shadow: rgba(45, 35, 66, .4) 0 2px 4px,rgba(45, 35, 66, .3) 0 7px 13px -3px,rgba(58, 65, 111, .5) 0 -3px 0 inset;
+    box-sizing: border-box;
+    color: #fff;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: "JetBrains Mono",monospace;
+    height: 48px;
+    justify-content: center;
+    line-height: 1;
+    list-style: none;
+    overflow: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
+    position: relative;
+    text-align: left;
+    text-decoration: none;
+    transition: box-shadow .15s,transform .15s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    white-space: nowrap;
+    will-change: box-shadow,transform;
+    font-size: 18px;
+    }
+
+    .button-29:focus {
+    box-shadow: #3c4fe0 0 0 0 1.5px inset, rgba(45, 35, 66, .4) 0 2px 4px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
+    }
+
+    .button-29:hover {
+    box-shadow: rgba(45, 35, 66, .4) 0 4px 8px, rgba(45, 35, 66, .3) 0 7px 13px -3px, #3c4fe0 0 -3px 0 inset;
+    transform: translateY(-2px);
+    }
+
+    .button-29:active {
+    box-shadow: #3c4fe0 0 3px 7px inset;
+    transform: translateY(2px);
+    }
+
+    /* CSS */
+    .button-30 {
+    align-items: center;
+    appearance: none;
+    background-color: #FCFCFD;
+    border-radius: 4px;
+    border-width: 0;
+    box-shadow: rgba(45, 35, 66, 0.4) 0 2px 4px,rgba(45, 35, 66, 0.3) 0 7px 13px -3px,#D6D6E7 0 -3px 0 inset;
+    box-sizing: border-box;
+    color: #36395A;
+    cursor: pointer;
+    display: inline-flex;
+    font-family: "JetBrains Mono",monospace;
+    height: 48px;
+    justify-content: center;
+    line-height: 1;
+    list-style: none;
+    overflow: hidden;
+    padding-left: 16px;
+    padding-right: 16px;
+    position: relative;
+    text-align: left;
+    text-decoration: none;
+    transition: box-shadow .15s,transform .15s;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+    white-space: nowrap;
+    will-change: box-shadow,transform;
+    font-size: 18px;
+    }
+
+    .button-30:focus {
+    box-shadow: #D6D6E7 0 0 0 1.5px inset, rgba(45, 35, 66, 0.4) 0 2px 4px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+    }
+
+    .button-30:hover {
+    box-shadow: rgba(45, 35, 66, 0.4) 0 4px 8px, rgba(45, 35, 66, 0.3) 0 7px 13px -3px, #D6D6E7 0 -3px 0 inset;
+    transform: translateY(-2px);
+    }
+
+    .button-30:active {
+    box-shadow: #D6D6E7 0 3px 7px inset;
+    transform: translateY(2px);
+    }
+
+    /* Add responsive classes to the form elements */
+    .responsive-col {
+    flex-basis: 100%;
+    max-width: 100%;
+    }
+
+    /* Add responsive classes to the button elements */
+    .responsive-btn-group {
+    flex-wrap: wrap;
+    justify-content: center;
+    }
+
+    /* Media query for tablet size (800x1280) */
+    @@media only screen and (max-width: 800px) {
+    .responsive-col {
+    flex-basis: 50%;
+    max-width: 50%;
+    }
+
+    .responsive-btn-group {
+    flex-direction: column;
+    align-items: center;
+    }
+
+    .responsive-btn-group button {
+    width: 100%;
+    margin-bottom: 10px;
+    }
+    }
+
+    [type="date"] {
+    background: #fff url(https://cdn1.iconfinder.com/data/icons/cc_mono_icon_set/blacks/16x16/calendar_2.png) 97% 50% no-repeat;
+    }
+
+    [type="date"]::-webkit-inner-spin-button {
+    display: none;
+    }
+
+    [type="date"]::-webkit-calendar-picker-indicator {
+    opacity: 0;
+    }
+
+</style>
+
+
+<script>
+    window.scrollToTop = function () {
+    window.scrollTo({
+    top: 0,
+    behavior: 'smooth'
+    });
+    }
+
+    window.toggleDiv = (elementId, shouldHide) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+    element.style.display = shouldHide ? 'none' : 'block';
+    }
+    }
+
+    window.wipeOut = (elementId) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+    element.style.transition = 'all 0.5s ease-out';
+    element.style.transform = 'translateY(100%)';
+    element.style.opacity = 0;
+    setTimeout(() => {
+    element.style.display = 'none';
+    }, 500);
+    }
+    }
+
+    window.wipeIn = (elementId) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+    element.style.display = 'block';
+    element.style.transition = 'all 0.5s ease-in';
+    element.style.transform = 'translateX(0)';
+    element.style.opacity = 1;
+    }
+    }
+
+    function hideDiv() {
+    document.getElementById("myDiv2").style.display = "none";
+    }
+</script>
+<style>
+    .divBorder {
+    border: solid 3px #006080;
+    border-radius: 0px; /* adds a rounded corner effect */
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); /* adds a shadow effect */
+    transition: all 0.3s ease-in-out; /* adds a transition effect */
+    }
+
+    .divBorder:hover {
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.4);
+    /*transform: scale(1.1);  adds a scaling effect on hover */
+    }
+
+    .bottom-row {
+    position: relative !important;
+
+    z-index: 1;
+    }
+</style>
+
+<style>
+    .list-group-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    }
+
+    .float-right {
+    margin-left: auto;
+    }
+
+    .float-left {
+    margin-right: auto;
+    }
+
+
+    .loader {
+    position: relative;
+    width: 250px;
+    height: 250px;
+    border-radius: 50%;
+    background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+    animation: animate 1.2s linear infinite;
+    }
+
+    @@keyframes animate {
+    0% {
+    transform: rotate(0deg);
+    }
+
+    100% {
+    transform: rotate(360deg);
+    }
+    }
+
+    .loader span {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+    }
+
+    .loader-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-left: 7%;
+    z-index: 1000; /* make sure it's on top of other elements */
+    }
+
+    .loader span:nth-child(1) {
+    filter: blur(5px);
+    }
+
+    .loader span:nth-child(2) {
+    filter: blur(10px);
+    }
+
+    .loader span:nth-child(3) {
+    filter: blur(25px);
+    }
+
+    .loader span:nth-child(4) {
+    filter: blur(50px);
+    }
+
+    .loader:after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    right: 10px;
+    bottom: 10px;
+    background: #f1f1f1;
+    border: solid white 10px;
+    border-radius: 50%;
+    }
+
+
+    .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* adjust the opacity to your liking */
+    z-index: 1000; /* make sure it's on top of everything else */
+    }
+
+
+
+    .downloadText {
+    position: relative;
+    font-family: sans-serif;
+    font-size: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    overflow: hidden;
+    background: linear-gradient(90deg, #000, #fff, #000);
+    background-repeat: no-repeat;
+    background-size: 80%;
+    animation: animateP 3s linear infinite;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: rgba(255, 255, 255, 0);
+    }
+
+    @@keyframes animateP {
+    0% {
+    background-position: -500%;
+    }
+
+    100% {
+    background-position: 500%;
+    }
+    }
+</style>
+
+<style>
+    /* From Uiverse.io by alexmaracinaru */
+    .cta {
+    border: none;
+    background: none;
+    cursor: pointer;
+    }
+
+    .cta span {
+    padding-bottom: 5px;
+    letter-spacing: 6px;
+    font-size: 11px;
+    padding-right: 7px;
+    text-transform: uppercase;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.7);
+    font-weight: bold;
+    }
+
+    .cta svg {
+    transform: translateX(-5px);
+    transition: all 0.3s ease;
+    }
+
+    .cta:hover svg {
+    transform: translateX(0);
+    }
+
+    .cta:active svg {
+    transform: scale(0.9);
+    }
+
+    .hover-underline-animation {
+    position: relative;
+    color: black;
+    padding-bottom: 20px;
+    }
+
+    .hover-underline-animation:after {
+    content: "";
+    position: absolute;
+    width: 100%;
+    transform: scaleX(0);
+    height: 2px;
+    bottom: 0;
+    left: 0;
+    background-color: #000000;
+    transform-origin: bottom right;
+    transition: transform 0.25s ease-out;
+    }
+
+    .cta:hover .hover-underline-animation:after {
+    transform: scaleX(1);
+    transform-origin: bottom left;
+    }
+
+</style>
+
+<PageTitle>
+    Visitor Registration
+</PageTitle>
+
+@if (processing == true)
+{
+    <div class="overlay" />
+    <div class="loader-container">
+        <div class="loader">
+
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="loader-container">
+        <p class="downloadText">Processing...</p>
+    </div>
+}
+
+@* <div class="container p-4 divBorder mb-2" style="overflow-y: auto; height: 1280px; background-color: #00ace6; width: 75%"> *@
+<div class="container p-4 divBorder mb-2" style="overflow-y: auto; max-height: 1280px; background-color: #00ace6; width: 75%">
+    <div style="">
+        <div class="position-relative">
+            <section class="my-1 w-100 p-4 border" style="border: solid 1px #18100a !important;  border-radius: 15px; background-color: #f5fefd">
+                @*container removed 21/8/2024*@
+                <div class="d-flex" style="justify-content:space-between">
+                    <h3 style="text-align:left;  color:darkblue">Search Visitor</h3>
+                    @{string tempstrNo = "sskjskjjj16-82";}
+                    <h4 type="button" class="btn btn-link" @onclick="() => searchVisitor(tempstrNo)">New Register</h4>
+                    @* @if (backBtn == true)
+                    {
+                        <img src="/images/R.png" width="10%" height="10%" type="button" @onclick="BackToRegister" />
+                    } *@
+
+                </div>
+
+
+                @*  @if (registeredVisitorSearch == true)
+                { *@
+                @{var NoId = "NoId";}
+                <div class="row" style="display: flex; align-items: flex-start;">
+                    <div class="col-sm-2">
+                        @* <button type="button" class="btn btn-warning" @onclick="() => searchVisitorUpd(vidSearch)">Edit Appointment</button> *@
+                        <button type="button" class="btn btn-info" @onclick="() => searchVisitorUpd(vidSearch)">Edit Appt.</button>
+                    </div>
+                    <div class="col-sm-2">
+                        @* <button type="button" class="btn btn-warning" @onclick="() => searchVisitorDetailUpd(vidSearch)">Edit User</button> *@
+
+                        <button type="button" class="btn btn-info" @onclick="() => searchVisitorDetailUpd(vidSearch)">Update Usr</button>
+
+                    </div>
+                    <div class="col-sm-3">
+                        @if (_role == "Admin" || _role == "User")
+                        {
+                            <select id="selectid" class="form-select" @bind="SelectedFav" aria-label="SelectedFav">
+                                <option value="None" selected="@("None" == SelectedFav)">Your Favourites...</option>
+                                @if (distinctData is null)
+                                {
+
+                                }
+                                else if (distinctData.Count == 0)
+                                {
+                                    <option disabled>No Data</option>
+                                }
+                                else
+                                {
+                                    @foreach (var fv in distinctData)
+                                    {
+                                        var favvname = fv.VisitorData.FirstName + " " + fv.VisitorData.LastName;
+                                        <option value=@fv.VisitingDetails.VisitorId selected="@(favVisitor == favvname)"> @favvname </option>
+                                    }
+                                }
+                            </select>
+                        }
+                    </div>
+                    <div class="col-sm-3">
+
+                        <input type="text" id="vidSearch" class="form-control" @bind-value="vidSearch" @bind-value:event="oninput" @onkeydown="HandleEnter" placeholder="Mobile No/IdProof/V_ID" aria-label="Visitor ID(NameLastNameMobNo.))">
+                        <label for="vidSearch" class="form-label">
+                            <span style="color: red; font-size: 70%">Note: Visitor ID(FirstNameLastNameMobNo.)</span>
+                        </label>
+                    </div>
+
+                    <div class="col-sm-2" >
+                        @* <button type="button" class="btn btn-info" @onclick="() => searchVisitor(vidSearch)">Submit</button> *@
+                        <button type="button" class="custom-btn btn-1" @onclick="() => searchVisitor(vidSearch)">Search</button>
+                        <label for="vidSearch" class="form-label" style="text-align: left !important">
+                            <span style="color: red; font-size: 70%">For New Appointment</span>
+                        </label>
+                    </div>
+                </div>
+
+
+
+
+                <div class="row g-3">
+                    <h5 style="color:saddlebrown"><i>@searchingFlag </i></h5>
+                </div>
+                @if (searchingFlagID != null){
+                    <div class="row g-3">
+                        <h5 style="color:saddlebrown"><i>@searchingFlagID </i></h5>
+                    </div>
+                }
+                @if (visitorIdSearch is null && searchingFlag != "")
+                {
+                    <h5 style="color:saddlebrown"><i>It seems you are not registered! Register from below or try again. </i></h5>
+                }
+
+                @if (searchingFlag != "")
+                {
+                    @if (visitorIdSearch != null)
+                    {
+                        <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                            <div class="table-responsive">
+                                <table class="table table-striped table-bordered border-secondary-subtle shadow align-middle table-condensed" id="FillMaterial">
+                                    <thead class="table-secondary">
+                                        <tr>
+                                            <th>Visitor Name</th>
+                                            @*   <th>DOB </th> *@
+                                            <th>Company</th>
+                                            <th>Mobile</th>
+                                            <th>ID Proof</th>
+                                            <th>Photo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="table-group-divider">
+                                        <tr>
+
+                                            <td>@visitorIdSearch.FirstName @visitorIdSearch.LastName</td>
+                                            @*  <td>@visitorIdSearch.DOB</td> *@
+                                            <td>@visitorIdSearch.Company</td>
+                                            <td>@visitorIdSearch.MobileNo</td>
+                                            <td>@visitorIdSearch.IdProofNo</td>
+
+                                            @if (visitorIdSearch.ImageData != null)
+                                            {
+                                                var base64String = Convert.ToBase64String(visitorIdSearch.ImageData);
+                                                var imageUrl = $"data:image/{GetImageFormat(visitorIdSearch.ImageData)};base64,{base64String}";
+                                                <td><img src="@imageUrl" width="45" height="50" alt="Visitor" /></td>
+                                            }
+
+
+                                        </tr>
+
+
+
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    }
+                }
+
+
+                @* <hr style="border-color: grey;"> *@
+
+                @* } *@
+
+
+
+
+                <hr style="border-color: grey; margin: 0 !important; ">
+
+
+            </section>
+        </div>
+        @if ((visitorIdSearch is null || visitorIdSearchUpd != null) && searchingFlag != "")
+        {
+            <div class="position-relative" id="myDiv1">
+                <section class="my-1 w-100 px-4 pb-4 pt-3 border mb-2" style="border: solid 1px #18100a !important;  border-radius: 15px; background-color: #f5fefd; opacity: 0.95">
+                    @*container removed 21/8/2024*@
+                    <div class="d-flex" style="justify-content: space-between">
+                        <h3 style="text-align:left;  color:darkblue">Visitor Registration</h3>
+                        @*<div class="d-flex">
+                            @if (_role == "Admin" || _role == "User")
+                            {
+                                <select id="selectid" class="form-select mx-2" style="height: 75%" @bind="SelectedFav" placeholder="SelectedFav">
+
+                                    <option value="None" selected="@("None" == SelectedFav)">Your Favourites...</option>
+                                    @if (distinctData is null)
+                                    {
+                                        <span>Loading...</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var fv in distinctData)
+                                        {
+                                            var favvname = fv.VisitorData.FirstName + " " + fv.VisitorData.LastName;
+                                            <option checked="@(favVisitor == favvname)" value=@fv.VisitingDetails.VisitorId> @favvname </option>
+                                        }
+                                    }
+
+
+                                </select>
+                            }
+
+
+                            <!--<h4 style="text-align:right; color:cornflowerblue">
+                                <span style="white-space: nowrap">
+                                    <button type="button" class="btn btn-link fs-5" @onclick="alreadyVisited">Already Registered?</button>
+                                </span>
+                            </h4> -->
+                        </div>*@
+
+
+                    </div>
+
+                    <hr style="border-color: grey; margin: 0 !important; ">
+
+                    <EditForm Model="vData" OnValidSubmit="@HandleSubmit" FormName="visitorregistration" class="row g-2">
+                        @if(showErrorMessageFlag){
+                            <div role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000">
+                                <AlertMessage Message="@message" MessageType="@messageType" />
+                            </div>
+                        }
+
+                        <DataAnnotationsValidator></DataAnnotationsValidator>
+                        <div style="background-color:aliceblue"><h4 style="text-align:left; padding: 3px; color: black">Visitor Details</h4></div>
+                        <div class="">
+                            <div class="row mt-1">
+                                <div class="col-md-4">
+                                    <label for="name" class="form-label">First Name <label style="color: red">*</label></label>
+                                    <InputText @bind-Value="vData.FirstName" type="text" class="form-control" id="name" style="text-transform:uppercase" />
+                                    <ValidationMessage For="() => vData.FirstName" />
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="lastname" class="form-label">Last Name <label style="color: red">*</label></label>
+                                    <InputText @bind-Value="vData.LastName" type="text" class="form-control" id="lasname" style="text-transform:uppercase" />
+                                    <ValidationMessage For="() => vData.LastName" />
+                                </div>
+                                @*  <div class="col-md-3">
+                                    <label for="dob" class="form-label">DOB <label style="color: red">*</label></label>
+                                    <InputDate @bind-Value="vData.DOB" class="form-control" placeholder="@dt" />
+                                    <ValidationMessage For="() => vData.DOB" />
+                                </div> *@
+
+                                <div class="col-md-4">
+                                    <label for="company" class="form-label">Company <label style="color: red">*</label></label>
+                                    <InputText @bind-Value="vData.Company" type="text" id="company" class="form-control" />
+                                    <ValidationMessage For="() => vData.Company" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="">
+
+                            <div class="row mt-1">
+                                <div class="col-md-3">
+                                    <label for="email" class="form-label">Email <label style="color: deepskyblue">(NA if email not available)</label></label>
+                                    <InputText @bind-Value="vData.Email" type="text" class="form-control" id="email" />
+                                    <ValidationMessage For="() => vData.Email" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="mobno" class="form-label">Mobile No. <label style="color: red">*</label></label>
+                                    @*  <InputText @bind-Value="vData.MobileNo" type="number" id="mobno" class="form-control" /> *@
+                                    <input @oninput="UpdateVisitorID" id="mobno" class="form-control" type="number" />
+                                    <label class="text-danger">@mobNumberError</label>
+                                    <ValidationMessage For="() => vData.MobileNo" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="selectid" class="form-label">Select Id Proof <label style="color: red">*</label></label>
+                                    <InputSelect @bind-Value="vData.IdProof" id="selectid" class="form-select">
+                                        <option selected>Choose...</option>
+                                        <option checked="@(vData!.IdProof == "AadharCard")"
+                                        value="AadharCard">
+                                            Aadhar Card
+                                        </option>
+                                        <option checked="@(vData!.IdProof == "PanCard")"
+                                        value="PanCard">
+                                            Pan Card
+                                        </option>
+                                        <option checked="@(vData!.IdProof == "VoterId")"
+                                        value="VoterId">
+                                            Voter Id
+                                        </option>
+                                        <option checked="@(vData!.IdProof == "DrivingLicense")"
+                                        value="DrivingLicense">
+                                            Driving License
+                                        </option>
+                                        <option checked="@(vData!.IdProof == "Passport")"
+                                        value="Passport">
+                                            Passport
+                                        </option>
+                                    </InputSelect>
+                                    <ValidationMessage For="() => vData.IdProof" />
+                                </div>
+
+                                <div class="col-md-3">
+                                    <label for="idproofno" class="form-label">Id Proof No. <label style="color: red">*</label></label>
+                                    <InputText @bind-Value="vData.IdProofNo" type="text" id="idproofno" class="form-control" />
+                                    <ValidationMessage For="() => vData.IdProofNo" />
+                                </div>
+
+
+                            </div>
+                            <div class="row mt-1">
+                                <div class="col-md-3">
+                                    <label for="gender" class="form-label">Gender <label style="color: red">*</label></label>
+                                    <br />
+                                    @*<InputSelect @bind-Value="vData.Gender" id="gender" class="form-select">
+                                    <option selected>Choose...</option>
+                                    <option checked="@(vData!.Gender == "Male")"
+                                    value="Male">
+                                    Male
+                                    </option>
+                                    <option checked="@(vData!.Gender == "Female")"
+                                    value="Female">
+                                    Female
+                                    </option>
+                                    </InputSelect>*@
+                                    <div type="text" class="form-control">
+                                        <InputRadioGroup id="gender" @bind-Value="vData.Gender" class="form-control">
+                                            <InputRadio Value="Male" class="custom-radio" /> Male
+                                            <InputRadio Value="Female" class="custom-radio" /> Female
+
+                                        </InputRadioGroup>
+                                    </div>
+
+                                    <ValidationMessage For="() => vData.Gender" />
+                                </div>
+                                <div class="col-md-3">
+                                    <label for="inputAddress" class="form-label">Address</label>
+                                    <InputText @bind-Value="vData.Address" type="text" class="form-control" id="inputAddress" placeholder="" />
+                                    <ValidationMessage For="() => vData.Address" />
+                                </div>
+                                <div class="col-md-6">
+                                    @if (_role == "Security")
+                                    {
+                                        <div style="border: 1px solid darkblue; box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);" class="p-2">
+
+                                            <div class="col-md-12" style="text-align: center">
+                                                @*
+                                        @if (!string.IsNullOrWhiteSpace(vcFrame))
+                                        {
+                                        <video id="videoFeed" width="240" height="240" />
+                                        <canvas class="d-none" id="currentFrame" width="240" height="240" />
+                                        <br />
+
+                                        <br />
+                                        }
+                                        *@
+                                                <div class="mb-2">
+                                                    @if (!string.IsNullOrEmpty(frameUri))
+                                                    {
+                                                        <img src="@frameUri" class="img-thumbnail" />
+                                                    }
+                                                    else
+                                                    {
+                                                        <img src="" class="img-thumbnail" />
+                                                    }
+                                                </div>
+                                                <button type="button" class="bezel-less" @onclick="StartVideo" data-bs-toggle="modal" data-bs-target="#exampleModal">Start Camera</button>
+
+
+
+                                                @if (string.IsNullOrEmpty(frameUri))
+                                                {
+                                                    <div class="">
+                                                        <h6 style="color: red; font-size:50%">Photo is Mandatory*</h6>
+                                                    </div>
+                                                }
+
+
+                                            </div>
+                                        </div>
+                                    }
+
+                                </div>
+                            </div>
+                            @* <div class="row mt-1">
+                            <div class="col-8">
+                            <label for="inputAddress" class="form-label">Address</label>
+                            <InputText @bind-Value="vData.Address" type="text" class="form-control" id="inputAddress" placeholder="" />
+                            </div>
+
+                            </div> *@
+
+
+                        </div>
+
+
+
+
+
+                        <div class="col-md-12 btn-center d-flex">
+                            <div class="pe-2">
+                                @if (updtBtnUsr == true)
+                                {
+                                    <button type="submit" class="btn button-29">Update User</button>
+                                }
+                                else
+                                {
+                                    <button type="submit" class="btn button-29">Save and Next</button>
+                                }
+
+                            </div>
+                            <div>
+                                <button type="button" class="btn button-30" @onclick="ClearForm">Clear</button>
+                            </div>
+
+
+                        </div>
+
+                    </EditForm>
+                </section>
+            </div>
+
+        }
+        <div role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000" class="text-center">
+            @if(showErrorMessageFlag){
+                <AlertMessage Message="@message" MessageType="@messageType" />
+            }
+
+        </div>
+
+        <!-----------------------------------------------------------------------------------2nd Div for Tab-------------------------------------------------------------------------------->
+        @if (visitorIdSearch != null || visitorIdSearchUpd != null || registeredVisitorSearch == false)
+        {
+            <div class="position-relative" id="myDiv2">
+                <section class="my-1 w-100 p-4 border" style="border: solid 1px #18100a !important;  border-radius: 15px; background-color: #f5fefd">
+                    @*container removed 21/8/2024*@
+                    <div class="d-flex" style="justify-content:space-between">
+                        <h3 style="text-align:left;  color:darkblue">Book Appointment</h3>
+                        @*<div class="d-flex">
+                            @if (_role == "Admin" || _role == "User")
+                            {
+                                <select id="selectid" class="form-select mx-2" style="height: 75%" @bind="SelectedFav" placeholder="SelectedFav">
+
+                                    <option value="None" selected="@("None" == SelectedFav)">Your Favourites...</option>
+                                    @if (distinctData is null)
+                                    {
+                                        <span>Loading...</span>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var fv in distinctData)
+                                        {
+                                            var favvname = fv.VisitorData.FirstName + " " + fv.VisitorData.LastName;
+                                            <option checked="@(favVisitor == favvname)" value=@fv.VisitingDetails.VisitorId> @favvname </option>
+                                        }
+                                    }
+
+
+                                </select>
+                            }
+
+                            <!--
+                        <h4 style="text-align:right; color:cornflowerblue">
+                            <span style="white-space: nowrap">
+                                <button type="button" class="btn btn-link fs-5" @onclick="alreadyVisited">Already Registered?</button>
+                            </span>
+                            </h4> -->
+                        </div>*@
+                        @* @if (backBtn == true)
+                    {
+                        <img src="/images/R.png" width="2%" height="2%" type="button" @onclick="BackToRegister" />
+                    } *@
+
+                    </div>
+
+
+
+                    <EditForm Model="vDetails" OnValidSubmit="@HandleSubmit2" FormName="visitdetails" class="row g-2">
+
+
+                        <DataAnnotationsValidator></DataAnnotationsValidator>
+
+
+                        <div style="background-color:aliceblue;  padding-top: 5px;"><h4 style="text-align:left; padding: 3px; color: black">Visiting Details</h4></div>
+
+                        <div class="col-md-3">
+                            <label for="visitortype" class="form-label">Visitor Type <label style="color: red">*</label></label>
+                            <InputSelect @bind-Value="vDetails.TypeId" id="visitortype" class="form-select">
+                                <option value="">
+                                    Select Visitor Type...
+                                </option>
+                                <option checked="@(vDetails!.TypeId == 1)"
+                                value=1>
+                                    Guest
+                                </option>
+                                <option checked="@(vDetails!.TypeId == 2)"
+                                value=2>
+                                    Supplier
+                                </option>
+                                <option checked="@(vDetails!.TypeId == 3)"
+                                value=3>
+                                    Contractor
+                                </option>
+                                <option checked="@(vDetails!.TypeId == 4)"
+                                value=4>
+                                    Contractor Employee
+                                </option>
+
+                            </InputSelect>
+                            <ValidationMessage For="() => vDetails!.TypeId" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="country" class="form-label">Country <label style="color: red">*</label></label>
+                            <InputSelect @bind-Value="vDetails.CountryId" class="form-select">
+
+                                <option value="">
+                                    Select Country...
+                                </option>
+                                @if (countryList == null)
+                                {
+                                    <span>Loading...</span>
+                                }
+                                else
+                                {
+                                    @foreach (var cnt in countryList)
+                                    {
+                                        <option checked="@(vDetails!.CountryId == cnt.CountryId)"
+                                        value=@cnt.CountryId>
+                                            @cnt.CountryName
+                                        </option>
+                                    }
+                                }
+
+
+                            </InputSelect>
+                            <ValidationMessage For="() => vDetails.CountryId" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="department" class="form-label">Company Site <label style="color: red">*</label></label>
+                            <InputSelect @bind-Value="vDetails.CompanySite" class="form-select">
+                                <option value="">
+                                    Select Site...
+                                </option>
+                                @if (companySite == null)
+                                {
+                                    <span>Loading...</span>
+                                }
+                                else
+                                {
+                                    @foreach (var site in companySite)
+                                    {
+                                        if (vDetails.CountryId == site.CountryId)
+                                        {
+                                            <option checked="@(vDetails!.CompanySite == site.SiteId)"
+                                            value=@site.SiteId>
+                                                @site.SiteName
+                                            </option>
+                                        }
+
+                                    }
+                                }
+
+
+
+
+                            </InputSelect>
+                            <ValidationMessage For="() => vDetails.CompanySite" />
+                        </div>
+
+                        <div class="col-md-3">
+                            <label for="department" class="form-label">Department To Visit <label style="color: red">*</label></label>
+                            <InputSelect @bind-Value="vDetails.CompanyDepartment" class="form-select">
+
+                                <option value="">
+                                    Select Department...
+                                </option>
+                                @if (dData == null)
+                                {
+                                    <span>Loading...</span>
+                                }
+                                else
+                                {
+                                    @foreach (var dept in dData)
+                                    {
+                                        <option checked="@(vDetails!.CompanyDepartment == dept.DeptId)"
+                                        value=@dept.DeptId>
+                                            @dept.DeptName
+                                        </option>
+                                    }
+                                }
+
+
+                            </InputSelect>
+                            <ValidationMessage For="() => vDetails.CompanyDepartment" />
+                        </div>
+
+                        <div class="col-md-4">
+                            <label for="departmentEmp" class="form-label">Department Person <label style="color: red">*</label></label>
+                            <InputSelect @bind-Value="vDetails.ApprovedBy" class="form-select">
+                                <option value="">
+
+                                    @{
+                                    string comDept = "";
+                                }
+                                @if (dData is null)
+                                {
+                                    <span>Loading...</span>
+                                }
+                                else
+                                {
+                                    @foreach (var dept in dData)
+                                    {
+
+                                        if (dept.DeptId == vDetails.CompanyDepartment)
+                                        {
+                                            comDept = dept.DeptName;
+                                        }
+                                    }
+                                }
+
+                                Select @comDept  Department Person...
+                            </option>
+                            @if (eData == null)
+                            {
+                                <span>Loading...</span>
+                            }
+                            else
+                            {
+                                int dId = 0;
+                                /*@foreach (var emp in eData)
+                                {
+
+                                    <option checked="@(vData!.DepartmentEmp == emp.EmpName)"
+                                    value=@emp.EmpName>
+                                    @emp.EmpName
+                                </option>
+
+
+                                    }*//*
+                                    @foreach (var dept in dData)
+                                    {
+                                        if (dept.DeptName == vDetails.CompanyDepartment)
+                                        {
+                                            dId = dept.DeptId;
+                                            }
+                                        }
+                                    @foreach (var emp in eData)
+                                    {
+                                        if (dId == emp.DeptId)
+                                        {
+                                    <option checked="@(vDetails!.ApprovedBy == emp.EmpName)"
+                                    value=@emp.EmpName>
+                                    @emp.EmpName
+                                    </option>
+                                    }
+
+                                            }*/
+                                    @foreach (var emp in eData)
+                                        {
+                                            if (vDetails.CompanyDepartment == emp.DeptId && vDetails.CompanySite == emp.SiteId)
+                                            {
+                                                <option checked="@(vDetails!.ApprovedBy == emp.EmpName)"
+                                                value=@emp.EmpName>
+                                                    @emp.EmpName
+                                                </option>
+                                            }
+
+                                        }
+                                    }
+
+
+                                </InputSelect>
+                                <ValidationMessage For="() => vDetails.ApprovedBy" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="duration" class="form-label">Visiting Duration(Days) <label style="color: red">*</label></label>
+                                <InputText @bind-Value="vDetails.Duration" type="number" id="duration" class="form-control" />
+                                <ValidationMessage For="() => vDetails.Duration" />
+                            </div>
+
+                            <div class="col-md-4">
+                                <label for="purpose" class="form-label">Purpose <label style="color: red">*</label></label>
+                                <InputText @bind-Value="vDetails.Purpose" type="text" id="purpose" class="form-control" />
+                                <ValidationMessage For="() => vDetails.Purpose" />
+                            </div>
+
+
+
+                            <div class="col-md-3">
+                                <label for="visitdate" class="form-label">Visit Date <label style="color: red">* @dt</label></label>
+                                <InputDate @bind-Value="vDetails.VisitDate" Type="InputDateType.Date" class="form-control" id="visitdate" min="@dt" placeholder="@dt" />
+                                <ValidationMessage For="() => vDetails.VisitDate" />
+                            </div>
+
+                            @* <div class="col-md-3">
+                            <label for="visittime" class="form-label">Visit Time <label style="color: red">*</label></label>
+                            <InputText @bind-Value="vDetails.VisitTime" type="time" class="form-control" id="visittime" />
+                            <ValidationMessage For="() => vDetails.VisitTime" />
+                        </div> *@
+
+                            <div class="col-md-3">
+                                <label for="visittime" class="form-label">Visit Time <label style="color: red">*</label></label>
+
+                                <div class="input-group">
+                                    <select id="hours" @bind="SelectedHour" class="form-control">
+                                        <option value="">hh</option>
+                                        @for (int i = 7; i < 24; i++)
+                                    {
+                                        <option value="@i">@i.ToString("D2")</option>
+                                    }
+                                </select>
+
+                                <select id="minutes" @bind="SelectedMinute" class="form-control">
+                                    <option value="">mm</option>
+                                    @if(SelectedHour == 23)
+                                    {
+                                        @for (int i = 0; i < 30; i++)
+                                        {
+
+                                            <option value="@i">@i.ToString("D2")</option>
+                                        }
+                                    }
+                                    else{
+                                        @for (int i = 0; i < 60; i++)
+                                        {
+
+                                            <option value="@i">@i.ToString("D2")</option>
+                                        }
+                                    }
+
+                                </select>
+                            </div>
+
+                            @if (!string.IsNullOrEmpty(ErrorMessageTime))
+                            {
+                                <div class="text-danger">@ErrorMessageTime</div>
+                            }
+                        </div>
+
+                        @if (vDetails?.Duration != null)
+                        {
+                            try
+                            {
+                                @if (int.Parse(vDetails?.Duration) > 1)
+                                {
+                                    <div class="col-md-3">
+                                        <label for="todate" class="form-label">To Date <label style="color: red">* @dt</label></label>
+                                        <InputDate @bind-Value="vDetails.ToDate" Type="InputDateType.Date" class="form-control" id="todate" min="@dt" placeholder="@dt" />
+                                        <ValidationMessage For="() => vDetails.ToDate" />
+                                    </div>
+                                }
+                            }
+                            catch { }
+
+
+                        }
+                        <div class="col-md-3">
+                            <label for="visitArea" class="form-label">VisitArea <label style="color: red">*</label></label>
+                            <br />
+
+                            <div type="text" class="form-control">
+                                <InputRadioGroup id="visitArea" @bind-Value="vDetails!.VisitArea" class="form-control">
+                                    <InputRadio Value="AdmArea" class="custom-radio" /> Admin
+                                    <InputRadio Value="ProdArea" class="custom-radio" /> Production
+
+                                </InputRadioGroup>
+                            </div>
+
+                            <ValidationMessage For="() => vDetails.VisitArea" />
+                        </div>
+
+
+
+
+                        <!--<InputFile OnChange="@HandleFileChange" />-->
+                        <!--
+                        <div class="col-12">
+                        <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="gridCheck">
+                        <label class="form-check-label" for="gridCheck">
+                        Check me out
+                        </label>
+                        </div>
+                        </div>-->
+                        @*  @if (vDetails!.TypeId == 2)
+                    {
+                        <div style="background-color:aliceblue;  padding-top: 5px;"><h4 style="text-align:left; padding: 3px; color: black">Supplier Details</h4></div>
+                        <div class="col-md-4">
+                            <label for="material" class="form-label">Material <label style="color: red">*</label></label>
+                            <input type="text" class="form-control" id="material" />
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="mqty" class="form-label">Material Quantity <label style="color: red">*</label></label>
+                            <input type="text" id="mqty" class="form-control" />
+
+                        </div>
+                        <div class="col-md-4">
+                            <label for="vlno" class="form-label">Vehicle No. <label style="color: red">*</label></label>
+                            <input type="text" id="vlno" class="form-control" />
+
+                        </div>
+
+                    } *@
+
+
+
+                        <div style="background-color:aliceblue;  padding-top: 5px;padding-bottom: 5px;"><h4 style="text-align:left; padding: 3px; color: black">Material Carried Details</h4></div>
+
+                        <div class="row pt-3">
+                            <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-xs-12">
+                                <div class="row">
+                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12">
+                                        <div class="text-danger" id="spnMaterial"></div>
+                                    </div>
+                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                                        <div class="form-group">
+                                            <label for="txtMaterialCarried" class="col-form-label">Material</label>
+                                            <input @bind-value="cMtrlDetails.cMtrl" type="text" placeholder="Enter Material Carried" autocomplete="on" class="form-control" id="txtMaterialCarried" name="txtMaterialCarried" />
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-6 col-lg-6 col-md-6 col-sm-12 col-xs-12">
+                                        <div class="form-group">
+                                            <label for="txtQuantity" class="col-form-label">Quantity</label>
+                                            <input type="number" @bind-value="cMtrlDetails.cMtrlQuantity" placeholder="Enter Quantity" maxlength="2" autocomplete="on" class="form-control" id="txtQuantity" name="txtQuantity" />
+                                        </div>
+                                    </div>
+                                    <div class="col-xl-12 col-lg-12 col-md-12 col-sm-12 col-xs-12 text-right">
+                                        <hr />
+                                        <button type="button" class="btn btn-primary" id="btnAddMaterial" name="btnAddMaterial" value="Add Material" @onclick="AddCarriedMtrl"><i class="fa fa-plus-circle"></i> Add Material</button>
+                                        <button type="button" class="btn btn-secondary" id="btnClearM" name="btnClearM" value="Clear" @onclick="ClearCarriedMtrl"><i class="fa fa-eraser"></i> Clear</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-6 col-lg-6 col-md-12 col-sm-12 col-xs-12">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-bordered border-secondary-subtle shadow align-middle table-condensed" id="FillMaterial">
+                                        <thead class="table-secondary">
+                                            <tr>
+                                                <th>No</th>
+                                                <th>Material</th>
+                                                <th>Qty</th>
+                                                <th>Delete</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="table-group-divider">
+                                            @{
+                                                int ctr = 1;
+                                            }
+                                            @foreach (var cmtrl in cMtrlList!)
+                                            {
+                                                <tr>
+                                                    <td>@ctr</td>
+                                                    <td>@cmtrl.cMtrl</td>
+                                                    <td>@cmtrl.cMtrlQuantity</td>
+                                                    <td>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="red" class="bi bi-trash3" role="button" @onclick="()=>deleteCarriedMtrl(cmtrl)" aria-expanded="false" viewBox="0 0 16 16">
+                                                            <path d="M6.5 1h3a.5.5 0 0 1 .5.5v1H6v-1a.5.5 0 0 1 .5-.5M11 2.5v-1A1.5 1.5 0 0 0 9.5 0h-3A1.5 1.5 0 0 0 5 1.5v1H1.5a.5.5 0 0 0 0 1h.538l.853 10.66A2 2 0 0 0 4.885 16h6.23a2 2 0 0 0 1.994-1.84l.853-10.66h.538a.5.5 0 0 0 0-1zm1.958 1-.846 10.58a1 1 0 0 1-.997.92h-6.23a1 1 0 0 1-.997-.92L3.042 3.5zm-7.487 1a.5.5 0 0 1 .528.47l.5 8.5a.5.5 0 0 1-.998.06L5 5.03a.5.5 0 0 1 .47-.53Zm5.058 0a.5.5 0 0 1 .47.53l-.5 8.5a.5.5 0 1 1-.998-.06l.5-8.5a.5.5 0 0 1 .528-.47M8 4.5a.5.5 0 0 1 .5.5v8.5a.5.5 0 0 1-1 0V5a.5.5 0 0 1 .5-.5" />
+                                                        </svg>
+                                                    </td>
+                                                </tr>
+                                                ctr++;
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        <div class="col-md-12 btn-center d-flex">
+                            @if(updtBtn == true){
+                                <div class="pe-2">
+                                    <button type="submit" class="btn button-29">Update</button>
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="pe-2">
+                                    <button type="submit" class="btn button-29">Submit</button>
+                                </div>
+                            }
+
+                            <div>
+                                <button type="button" class="btn button-30" @onclick="BackToRegister">Back</button>
+
+
+                            </div>
+
+                        </div>
+
+                    </EditForm>
+                </section>
+            </div>
+        }
+
+
+        <!-----------------------------------------------------------------------------------2ndDiv-------------------------------------------------------------------------->
+    </div>
+
+</div>
+
+
+
+
+
+
+
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-header">
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div style="display: flex; justify-content: center; align-items: center;">
+                    @if (!string.IsNullOrWhiteSpace(vcFrame))
+                    {
+                        <video id="videoFeed" width="240" height="240" />
+                        <canvas class="d-none" id="currentFrame" width="240" height="240" />
+
+                    }
+                </div>
+
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" @onclick="CloseModelVideo" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" @onclick="CaptureFrame" data-bs-dismiss="modal">Capture</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@*
+<button @onclick="HideDiv">Hide Div</button>
+<button @onclick="ShowDiv">Show Div</button>
+*@
+
+
+@code{
+
+
+    private int? SelectedHour { get; set; } = DateTime.Now.TimeOfDay.Hours; // or use int? to allow null
+    private int? SelectedMinute { get; set; } = DateTime.Now.TimeOfDay.Minutes; // or use int? to allow null
+    private string SelectedTime => $"{SelectedHour:D2}:{SelectedMinute:D2}";
+    string ErrorMessageTime = string.Empty;
+
+
+    string? imgUrl;
+    bool backBtn = false;
+    private string dt { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
+    private DateTime todaydt { get; set; } = DateTime.Now.Date;
+
+    public const string Male = "Male";
+    public const string Female = "Female";
+    public const bool AdmArea = true;
+    public const bool ProdArea = false;
+    public string favVisitor = "";
+
+    [Parameter]
+    public int? Id { get; set; }
+
+
+    bool processing = false;
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+
+    [SupplyParameterFromForm]
+    VisitorMasterModel vData { get; set; } = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(DateTime.Now.Date), Email = "NA" };
+
+    [SupplyParameterFromForm]
+    VisitingDetailsModel vDetails { get; set; } = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(DateTime.Now.Date), ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(DateTime.Now.Date), CompanySite = 1, Duration = "1", VisitArea = false, CountryId=1 };
+
+
+    string message = string.Empty;
+
+    Models.AlertMessageType messageType = Models.AlertMessageType.Success;
+
+
+    private bool showErrorMessageFlag = false;
+
+
+    async Task HandleFileChange(InputFileChangeEventArgs e)
+    {
+        var imageFile = e.File;
+        var format = imageFile.ContentType;
+        var imageInfo = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+        var resizedImageFile = await imageFile.RequestImageFileAsync(format, 100, 100);
+        var buffer = new byte[resizedImageFile.Size];
+
+        await resizedImageFile.OpenReadStream().ReadAsync(buffer);
+        imgUrl = $"data:{format};base64,{Convert.ToBase64String(buffer)}";
+
+        vData.ImageData = buffer;
+
+
+
+
+    }
+    public class VisitorDataAndDetailsModel
+    {
+        public VisitorMasterModel VisitorData { get; set; }
+        public VisitingDetailsModel VisitingDetails { get; set; }
+        public FavVisitorsModel FavoriteData { get; set; }
+    }
+
+    List<VisitorDataAndDetailsModel>? fcombinedData = null;
+    List<VisitorDataAndDetailsModel>? distinctData = null;
+    List<VisitorMasterModel>? vstrData = null;
+    List<VisitingDetailsModel>? vstrDetails = null;
+    List<FavVisitorsModel>? favDetails = null;
+
+
+    List<DeptData>? dData = null;
+    List<EmpData>? eData = null;
+    List<CompanySiteModel>? companySite = null;
+    List<CountryModel>? countryList = null;
+    List<VTypeModel>? vType = null;
+
+    private string _eMail { get; set; } = string.Empty;
+    private int _empId { get; set; }
+    private string _eName { get; set; } = string.Empty;
+    public string _role { get; set; } = string.Empty;
+    protected override async Task OnInitializedAsync()
+    {
+        // var visData = await VDataService.GetVisitorDataById("SHAMBORHADE2024-07-18");
+        // var visDet = await VDataService.GetFavVisitorDetailsByVIdEmp("SHAMBORHADE2024-07-18","Rupali Awati");
+        // if(visData != null)
+        // {
+        //     vData = visData;
+        //     vDetails = visDet;
+        // }
+
+        var authenticationState = await authenticationStateTask;
+        if (authenticationState.User.Identity.IsAuthenticated)
+        {
+            string email = authenticationState.User.Identity.Name;
+            dData = await VDataService.GetDeptData();
+            eData = await VDataService.GetEmpData();
+            vType = await VDataService.GetVisitorType();
+            companySite = await VDataService.GetCompanySite();
+            countryList = await VDataService.GetCountryList();
+            _eMail = email;
+            vData.DOB = DateOnly.FromDateTime(DateTime.Now.Date);
+            vDetails.VisitDate = DateOnly.FromDateTime(DateTime.Now.Date);
+            var claimsIdentity = authenticationState.User.Identity as ClaimsIdentity;
+            if (claimsIdentity != null)
+            {
+                var role = claimsIdentity.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Role)?.Value;
+                _role = role;
+
+            }
+
+            if (eData != null && _role != "Security")
+            {
+                // var eDataUser = eData.Where(x => x.EmpEmail.ToLower() == email).ToList();
+                // var deptId = eData.Select(y => y.DeptId).FirstOrDefault();
+                // _eName = eData.FirstOrDefault(e => e.EmpEmail.ToLower() == email).EmpName;
+                // var dDataUser = dData.Where(x => x.DeptId == deptId).ToList();
+
+                // vDetails.CompanyDepartment = dDataUser.Select(x => x.DeptId).FirstOrDefault();
+                // vDetails.ApprovedBy = eDataUser.Select(x => x.EmpName).FirstOrDefault();
+
+                eData = eData.Where(x => x.EmpEmail.ToLower() == email).ToList();
+                var deptId = eData.Select(y => y.DeptId).FirstOrDefault();
+                _eName = eData.FirstOrDefault(e => e.EmpEmail.ToLower() == email).EmpName;
+                _empId = eData.FirstOrDefault(e => e.EmpEmail.ToLower() == email).EmpId;
+                dData = dData.Where(x => x.DeptId == deptId).ToList();
+
+                vDetails.CompanyDepartment = dData.Select(x => x.DeptId).FirstOrDefault();
+                vDetails.ApprovedBy = eData.Select(x => x.EmpName).FirstOrDefault();
+                vDetails.Approval = "Approved";
+            }
+
+
+
+            vstrData = await VDataService.GetAllVisitorData();
+            vstrDetails = await VDataService.GetAllVisitingDetails();
+            favDetails = await VDataService.GetFavVisitors();
+            favDetails = favDetails.Where(x => x.EmpId == _empId).ToList();
+            fcombinedData = vstrData
+                .Join(vstrDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+                (vd, vdd) => new { VisitorData = vd, VisitingDetails = vdd })
+                .Join(favDetails, x => x.VisitorData.VisitorId, vd => vd.VisitorId,
+                (x, vdd) => new VisitorDataAndDetailsModel
+                    {
+                        VisitorData = x.VisitorData,
+                        VisitingDetails = x.VisitingDetails,
+                        FavoriteData = vdd
+                    })
+                .ToList();
+
+            var joinedData = vstrData
+                .Join(vstrDetails,
+                      vd => vd.VisitorId,
+                      vdd => vdd.VisitorId,
+                      (vd, vdd) => new { VisitorData = vd, VisitingDetails = vdd })
+                .ToList(); // Check the result here
+
+            var combinedData = joinedData
+                .Join(favDetails,
+                      x => x.VisitorData.VisitorId,
+                      vdd => vdd.VisitorId,
+                      (x, vdd) => new VisitorDataAndDetailsModel
+                          {
+                              VisitorData = x.VisitorData,
+                              VisitingDetails = x.VisitingDetails,
+                              FavoriteData = vdd
+                          })
+                .ToList(); // Final result
+
+
+            distinctData = fcombinedData
+            .GroupBy(x => x.VisitorData.VisitorId)
+            .Select(g => g.First())
+            .ToList();
+
+
+
+        }
+        else
+        {
+
+            dData = await VDataService.GetDeptData();
+            eData = await VDataService.GetEmpData();
+            vType = await VDataService.GetVisitorType();
+            companySite = await VDataService.GetCompanySite();
+            countryList = await VDataService.GetCountryList();
+            vstrData = await VDataService.GetAllVisitorData();
+            vstrDetails = await VDataService.GetAllVisitingDetails();
+            // favDetails = await VDataService.GetFavVisitors();
+            // fcombinedData = vstrData
+            //     .Join(vstrDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+            //     (vd, vdd) => new { VisitorData = vd, VisitingDetails = vdd })
+            //     .Join(favDetails, x => x.VisitorData.VisitorId, vd => vd.VisitorId,
+            //     (x, vdd) => new VisitorDataAndDetailsModel
+            //         {
+            //             VisitorData = x.VisitorData,
+            //             VisitingDetails = x.VisitingDetails,
+            //             FavoriteData = vdd
+            //         })
+            //     .ToList();
+            // distinctData = fcombinedData
+            // .GroupBy(x => x.VisitorData.VisitorId)
+            // .Select(g => g.First())
+            // .ToList();
+        }
+
+
+    }
+
+
+
+
+    async Task HandleSubmit()
+    {
+        if(updtBtnUsr == true){
+            await UpdateUsr();
+            return;
+        }
+
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        await JS.InvokeVoidAsync("scrollToTop");
+
+        if (mobNumber.Length != 10){
+            processing = false;
+            mobNumberError = "Enter Valid Mobile Number";
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+
+            return;
+        }
+        else if(mobNoFlag == true){
+            processing = false;
+            mobNumberError = "Mobile number already existed";
+            _ = InvokeAsync(() =>
+          {
+              StateHasChanged();
+          });
+            return;
+        }
+        else{
+            mobNumberError = "";
+
+            mobNoFlag = false;
+        }
+        @if (!string.IsNullOrEmpty(frameUri) || _role != "Security")
+        {
+            var existingVisitor = await VDataService.GetExistingDataAsync(vData.FirstName, vData.LastName, mobNumber);
+            //var existingVisitor = await VDataService.GetExistingDataAsync(vData.FirstName, vData.LastName, vData.DOB , mobNumber);
+
+
+            @*
+
+                var mailMessage = new MimeMessage();
+                var fromEmail = vData.Email;
+                mailMessage.From.Add(new MailboxAddress("Rahul", fromEmail ));
+                mailMessage.To.Add(new MailboxAddress("Test", "rahul.nagrikar@kohler.com"));
+                        mailMessage.Subject = "Request For...";
+
+                        /*
+                mailMessage.Body = new TextPart("plain")
+                {
+
+                Text = $"Check Your Information- Name: {vData.Name}, Email: {vData.Email}, Comapny: {vData.Company}"
+            };*/
+
+                var bodyBuilder = new BodyBuilder();
+                bodyBuilder.HtmlBody = $@"
+                    <html>
+                        <body>
+                            <p>Check Your Information:</p>
+                            <ul>
+                                <li>Name: {vData.Name}</li>
+                                <li>Email: {vData.Email}</li>
+                                <li>Company: {vData.Company}</li>
+                            </ul>
+                            <p>
+                                <a href='mailto:{fromEmail}?subject=Approved&body=Approved'>Approve</a>
+                                <a href='https://localhost:7265/api/confirm?email={vData.Email}'>Approve</a>
+                            </p>
+                        </body>
+                    </html>
+                ";
+
+                mailMessage.Body = bodyBuilder.ToMessageBody();
+
+                using(var client = new SmtpClient())
+                    {
+                    await client.ConnectAsync("mailhost.kohlerco.com", 25, MailKit.Security.SecureSocketOptions.StartTls);
+                   // await client.AuthenticateAsync("rupali.awati@kohler.com", "joewomthjbxxgepm");
+                    await client.SendAsync(mailMessage);
+                    await client.DisconnectAsync(true);
+                }
+        *@
+
+
+            if (existingVisitor == null)
+            {
+                try
+                {
+
+                    vData.FirstName = vData.FirstName.ToUpper().Trim().Replace(" ","");
+                    vData.LastName = vData.LastName.ToUpper().Trim().Replace(" ", "");
+                    vData.Email = vData.Email.ToLower().Trim().Replace(" ", "");
+                    vData.IdProofNo = vData.IdProofNo.Trim().Replace(" ", "");
+                    vData.MobileNo = mobNumber;
+                    vData.VisitorId = vData.FirstName + vData.LastName + vData.MobileNo??"".ToString().Trim();
+
+
+
+                    // //---Initial Image
+                    // var httpClient = _httpClientFactory.CreateClient();
+                    // var response = await httpClient.GetAsync("https://static.vecteezy.com/system/resources/previews/005/005/788/original/user-icon-in-trendy-flat-style-isolated-on-grey-background-user-symbol-for-your-web-site-design-logo-app-ui-illustration-eps10-free-vector.jpg");
+                    // response.EnsureSuccessStatusCode();
+
+                    // using var stream = await response.Content.ReadAsStreamAsync();
+                    // using var memoryStream = new MemoryStream();
+                    // await stream.CopyToAsync(memoryStream);
+
+                    // vData.ImageData = memoryStream.ToArray();
+                    // if(_role != "Security")
+                    // {
+                    //     vData.ImageData = System.Text.Encoding.UTF8.GetBytes("NA");
+                    // }
+                    // }
+
+
+                    await VDataService.RegisterVisitorData(vData);
+
+
+                    //vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = string.Empty };
+
+                    message = $"Successfully Registered! YOUR-ID: {vData.VisitorId}";
+
+                    messageType = Models.AlertMessageType.Success;
+                    searchingFlagID = $"Visitor Registered! ----- Visitor-ID: {vData.VisitorId}";
+
+                    showErrorMessageFlag = true;
+                    _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+                    // Start a timer to hide the message after 5 seconds
+                    Task.Delay(5000).ContinueWith(_ =>
+                    {
+                        showErrorMessageFlag = false;
+                        _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+                    });
+                    //frameUri = string.Empty;
+
+                    registeredVisitorSearch = false;
+                    searchingFlag = "";
+                    await JS.InvokeVoidAsync("wipeOut", "myDiv1", true);
+                    await JS.InvokeVoidAsync("wipeIn", "myDiv2", false);
+                }
+                catch (Exception e)
+                {
+                    vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+                    frameUri = string.Empty;
+                    message = $"Error: {e}";
+                    messageType = Models.AlertMessageType.Error;
+                    showErrorMessageFlag = true;
+                    _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+                    // Start a timer to hide the message after 5 seconds
+                    Task.Delay(5000).ContinueWith(_ =>
+                    {
+                        showErrorMessageFlag = false;
+                        _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+                    });
+
+                }
+
+
+                //await Task.Delay(3000);
+                //message = string.Empty;
+
+            }
+            else
+            {
+                vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+                message = "Visitor Already Exist!";
+                messageType = Models.AlertMessageType.Error;
+                showErrorMessageFlag = true;
+                _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+
+                // Start a timer to hide the message after 5 seconds
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    showErrorMessageFlag = false;
+                    _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+                });
+                frameUri = string.Empty;
+            }
+
+
+        }
+        processing = false;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+    }
+
+    async Task HandleSubmit2()
+    {
+        if (int.Parse(vDetails?.Duration) < 1){
+            vDetails.Duration = "";
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+            return; // Prevent form submission
+
+        }
+        if(updtBtn == true){
+            await Update();
+            return;
+        }
+
+        // Reset error message
+        ErrorMessageTime = string.Empty;
+
+        // Validate the selected time
+        if (SelectedHour == null || SelectedMinute == null || (SelectedHour == 0 && SelectedMinute == 0))
+        {
+            ErrorMessageTime = "Invalid visit time (not 00:00).";
+            _ = InvokeAsync(() =>
+              {
+                  StateHasChanged();
+              });
+            return; // Prevent form submission
+        }
+
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        //message = string.Empty;
+        JS.InvokeVoidAsync("scrollToTop");
+
+
+
+        vDetails.VisitTime = SelectedTime;
+        if (registeredVisitorSearch == true && visitorIdSearch != null)
+        {
+            vDetails.VisitorId = visitorIdSearch.VisitorId;
+        }
+
+        if (registeredVisitorSearch == false && visitorIdSearch == null)
+        {
+            vDetails.VisitorId = vData.VisitorId;
+        }
+
+        var todayDate = DateOnly.FromDateTime(DateTime.Now);
+        //var existingScheduleToday = await VDataService.GetExistingScheduleToday(vDetails.VisitorId, todayDate);
+        //var existingSchedule = await VDataService.GetExistingSchedule(vDetails.VisitorId, vDetails.VisitDate, vDetails.ToDate);
+        var existingSchedule = await VDataService.GetExistingScheduleWithTimeCondition(vDetails.VisitorId, vDetails.VisitDate, vDetails.ToDate, vDetails.VisitTime); //////////////////////Update for multiple appointemnets today
+
+
+
+
+        var existingScheduleOnlyDate = await VDataService.GetExistingSchedule(vDetails.VisitorId, vDetails.VisitDate, vDetails.ToDate); //// its a Vistor Detail
+
+
+        int PRMID = 0;
+        if(existingScheduleOnlyDate != null)
+        {
+            PRMID = existingScheduleOnlyDate.Id;
+        }
+        else
+        {
+            PRMID = 0;
+        }
+
+        var existingTranst = await VDataService.GetExistingScheduleTransaction(PRMID);
+
+
+
+        if (existingSchedule == null && existingScheduleOnlyDate == null)
+        {
+            if (registeredVisitorSearch == true)
+            {
+                if (visitorIdSearch == null)
+                {
+                    searchingFlag = "Please enter Visitor ID or Mobile Number......";
+                }
+                else
+                {
+                    if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                    {
+                        vDetails.ToDate = vDetails.VisitDate;
+                    }
+                    await VDataService.RegisterVisitingDetails(vDetails);
+                    await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                    await SendEmail();
+                }
+            }
+            else
+            {
+                if (vData.VisitorId == null)
+                {
+                    searchingFlag = "Error: Refresh the Page!";
+                }
+                else
+                {
+                    if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                    {
+                        vDetails.ToDate = vDetails.VisitDate;
+                    }
+
+
+
+
+
+                    await VDataService.RegisterVisitingDetails(vDetails);
+                    await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                    if (vDetails.Approval != "Approved")
+                    {
+                        await SendEmail();
+                    }
+
+
+                }
+            }
+
+
+            vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+            vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+            frameUri = string.Empty;
+
+
+            cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+            cMtrlList = new List<CarriedMaterialModel>();
+
+
+            vidSearch = string.Empty;
+            lNameSearch = string.Empty;
+            //visitorIdSearch = null;
+            searchingFlag = string.Empty;
+            searchingFlagID = "";
+            dobSearch =  DateOnly.FromDateTime(DateTime.Now);
+
+            _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+
+
+
+            if (registeredVisitorSearch == true)
+            {
+                if (visitorIdSearch == null)
+                {
+                    searchingFlag = "Please Search Visitor";
+                    _ = InvokeAsync(() =>
+                    {
+                        StateHasChanged();
+                    });
+                }
+                else
+                {
+
+
+                    visitorIdSearch = null;
+                    message = "Visiting Details Submitted!";
+                    messageType = Models.AlertMessageType.Success;
+                    showErrorMessageFlag = true;
+                    searchingFlagID = "";
+                    _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+                    // Start a timer to hide the message after 5 seconds
+                    Task.Delay(5000).ContinueWith(_ =>
+                    {
+                        showErrorMessageFlag = false;
+                        _ = InvokeAsync(() =>
+                       {
+                           StateHasChanged();
+                       });
+                    });
+                }            
+            }
+            else
+            {
+                message = "Visiting Details Submitted!";
+                messageType = Models.AlertMessageType.Success;
+                showErrorMessageFlag = true;
+                searchingFlagID = "";
+                _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+
+                // Start a timer to hide the message after 5 seconds
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    showErrorMessageFlag = false;
+                    _ = InvokeAsync(() =>
+                       {
+                           StateHasChanged();
+                       });
+                });
+            }
+            searchingFlag = "";
+            processing = false;
+            registeredVisitorSearch = true;
+            mobSearch = "";
+            vidSearch = "";
+            searchingFlagID = "";
+            _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+
+            return;
+
+        }
+
+
+
+        ////////////////////////////////////////////////////////////////////////////////////////
+
+        if (existingSchedule == null)
+        {
+            if (existingTranst == null && existingScheduleOnlyDate != null){
+
+                message = "Vistor not check in yet.";
+                messageType = Models.AlertMessageType.Warning;
+                Console.WriteLine("Vistor not check in yet.");
+                showErrorMessageFlag = true;
+                _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+
+                // Start a timer to hide the message after 5 seconds
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    showErrorMessageFlag = false;
+                    _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+                });
+
+
+
+                vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+                vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email = "NA" };
+                frameUri = string.Empty;
+
+
+                cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+                cMtrlList = new List<CarriedMaterialModel>();
+
+
+                vidSearch = string.Empty;
+                lNameSearch = string.Empty;
+                //visitorIdSearch = null;
+                searchingFlag = string.Empty;
+                searchingFlagID = "";
+                dobSearch = DateOnly.FromDateTime(DateTime.Now);
+
+                processing = false;
+                registeredVisitorSearch = true;
+                mobSearch = "";
+                vidSearch = "";
+                _ = InvokeAsync(() =>
+                       {
+                           StateHasChanged();
+                       });
+
+                return;
+            }
+            else
+            {
+                if (existingTranst != null)
+                {
+                    if (existingTranst.CheckOut == null)
+                    {
+                        message = "Vistor Not Checked Out.";
+                        messageType = Models.AlertMessageType.Warning;
+                        Console.WriteLine("Vistor Not Checked Out.");
+                        showErrorMessageFlag = true;
+                        _ = InvokeAsync(() =>
+                           {
+                               StateHasChanged();
+                           });
+
+                        // Start a timer to hide the message after 5 seconds
+                        Task.Delay(5000).ContinueWith(_ =>
+                        {
+                            showErrorMessageFlag = false;
+                            _ = InvokeAsync(() =>
+                           {
+                               StateHasChanged();
+                           });
+                        });
+
+
+
+                        vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+                        vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email = "NA" };
+                        frameUri = string.Empty;
+
+
+                        cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+                        cMtrlList = new List<CarriedMaterialModel>();
+
+
+                        vidSearch = string.Empty;
+                        lNameSearch = string.Empty;
+                        //visitorIdSearch = null;
+                        searchingFlag = string.Empty;
+                        searchingFlagID = "";
+                        dobSearch = DateOnly.FromDateTime(DateTime.Now);
+
+                        processing = false;
+                        registeredVisitorSearch = true;
+                        mobSearch = "";
+                        vidSearch = "";
+                        _ = InvokeAsync(() =>
+                               {
+                                   StateHasChanged();
+                               });
+
+                        return;
+                    }
+                    else
+                    {
+                        if (registeredVisitorSearch == true)
+                        {
+                            if (visitorIdSearch == null)
+                            {
+                                searchingFlag = "Please enter Visitor ID or Mobile Number......";
+                            }
+                            else
+                            {
+                                if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                                {
+                                    vDetails.ToDate = vDetails.VisitDate;
+                                }
+                                await VDataService.RegisterVisitingDetails(vDetails);
+                                await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                                await SendEmail();
+                            }
+                        }
+                        else
+                        {
+                            if (vData.VisitorId == null)
+                            {
+                                searchingFlag = "Error: Refresh the Page!";
+                            }
+                            else
+                            {
+                                if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                                {
+                                    vDetails.ToDate = vDetails.VisitDate;
+                                }
+
+
+
+
+
+                                await VDataService.RegisterVisitingDetails(vDetails);
+                                await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                                if (vDetails.Approval != "Approved")
+                                {
+                                    await SendEmail();
+                                }
+
+
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if (registeredVisitorSearch == true)
+                    {
+                        if (visitorIdSearch == null)
+                        {
+                            searchingFlag = "Please enter Visitor ID or Mobile Number......";
+                        }
+                        else
+                        {
+                            if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                            {
+                                vDetails.ToDate = vDetails.VisitDate;
+                            }
+                            await VDataService.RegisterVisitingDetails(vDetails);
+                            await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                            await SendEmail();
+                        }
+                    }
+                    else
+                    {
+                        if (vData.VisitorId == null)
+                        {
+                            searchingFlag = "Error: Refresh the Page!";
+                        }
+                        else
+                        {
+                            if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                            {
+                                vDetails.ToDate = vDetails.VisitDate;
+                            }
+
+
+
+
+
+                            await VDataService.RegisterVisitingDetails(vDetails);
+                            await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                            if (vDetails.Approval != "Approved")
+                            {
+                                await SendEmail();
+                            }
+
+
+                        }
+                    }
+                }
+
+                //////////////////////////////////////////////////////////////////////////////////////////
+
+            }
+
+        }
+        else
+        {
+            message = "Already on Today's Schedule.";
+            messageType = Models.AlertMessageType.Warning;
+            Console.WriteLine("Already on Today's Schedule.");
+            showErrorMessageFlag = true;
+            _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+            });
+
+
+
+            vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId=1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+            vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+            frameUri = string.Empty;
+
+
+            cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+            cMtrlList = new List<CarriedMaterialModel>();
+
+
+            vidSearch = string.Empty;
+            lNameSearch = string.Empty;
+            //visitorIdSearch = null;
+            searchingFlag = string.Empty;
+            searchingFlagID = "";
+            dobSearch = DateOnly.FromDateTime(DateTime.Now);
+
+            processing = false;
+            registeredVisitorSearch = true;
+            mobSearch = "";
+            vidSearch = "";
+            _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+
+            return;
+        }
+
+
+
+
+        vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+        vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email="NA" };
+        frameUri = string.Empty;
+
+
+        cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+        cMtrlList = new List<CarriedMaterialModel>();
+
+
+        vidSearch = string.Empty;
+        lNameSearch = string.Empty;
+        //visitorIdSearch = null;
+        searchingFlag = string.Empty;
+        searchingFlagID = "";
+        dobSearch =  DateOnly.FromDateTime(DateTime.Now);
+
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+
+
+
+        if (registeredVisitorSearch == true)
+        {
+            if (visitorIdSearch == null)
+            {
+                searchingFlag = "Please Search Visitor";
+                _ = InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+            }
+            else
+            {
+
+
+                visitorIdSearch = null;
+                message = "Visiting Details Submitted!";
+                messageType = Models.AlertMessageType.Success;
+                showErrorMessageFlag = true;
+                searchingFlagID = "";
+                _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+
+                // Start a timer to hide the message after 5 seconds
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    showErrorMessageFlag = false;
+                    _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+                });
+            }            
+        }
+        else
+        {
+            message = "Visiting Details Submitted!";
+            messageType = Models.AlertMessageType.Success;
+            showErrorMessageFlag = true;
+            searchingFlagID = "";
+            _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+            });
+        }
+        searchingFlag = "";
+        processing = false;
+        registeredVisitorSearch = true;
+        mobSearch = "";
+        vidSearch = "";
+        searchingFlagID = "";
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+    }
+
+
+    async Task ClearForm()
+    {
+        vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt),Email="NA" };
+        frameUri = string.Empty;
+        message = string.Empty;
+        searchingFlagID = "";
+    }
+
+    async Task BackToRegister()
+    {
+        vDetails = new VisitingDetailsModel { VisitorId = string.Empty, CountryId = 1, VisitDate = DateOnly.FromDateTime(todaydt), ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+
+        //await JS.InvokeVoidAsync("wipeIn", "myDiv1", false);
+        //message = string.Empty;
+    }
+
+
+    //
+
+
+    private string frameUri;
+    private string vcFrame;
+
+
+    /*
+    protected override async Task OnInitializedAsync()
+    {
+        await JS.InvokeVoidAsync("startVideo", "");
+
+
+        }*/
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //await JS.InvokeVoidAsync("my_camera", DotNetObjectReference.Create(this));
+            //await JS.InvokeVoidAsync("startVideo", "videoFeed");
+            //await JS.InvokeVoidAsync("hideDiv");
+        }
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+    /*
+    private async Task CaptureFrame()
+    {
+        await JS.InvokeAsync<String>("getFrame", "videoFeed", "currentFrame", DotNetObjectReference.Create(this));
+        }*/
+
+    private async Task StartVideo(MouseEventArgs e)
+    {
+        vcFrame = "true";
+        await JS.InvokeVoidAsync("startVideo", "videoFeed");
+    }
+    private async Task CaptureFrame(MouseEventArgs e)
+    {
+
+        await JS.InvokeAsync<String>("getFrame", "videoFeed", "currentFrame", DotNetObjectReference.Create(this));
+        await JS.InvokeVoidAsync("stopVideo", "videoFeed");
+        vcFrame = string.Empty;
+
+
+    }
+
+    private async Task CloseModelVideo()
+    {
+        await JS.InvokeVoidAsync("stopVideo", "videoFeed");
+    }
+
+
+
+    [JSInvokable]
+    public void ProcessImage(string imageString)
+    {
+        byte[] imageData = Convert.FromBase64String(imageString.Split(',')[1]);
+
+        //Do image processing here
+
+        var drawingOptions = new DrawingOptions()
+            {
+                GraphicsOptions = new GraphicsOptions()
+                {
+
+                }
+            };
+
+
+
+
+        using (var image = Image.Load(imageData))
+        {
+            var width = image.Width;
+            var height = image.Height;
+            var resizeOptions = new ResizeOptions()
+                {
+                    Mode = SixLabors.ImageSharp.Processing.ResizeMode.Pad,
+                    PadColor = SixLabors.ImageSharp.Color.Black,
+                    Size = new SixLabors.ImageSharp.Size(width, height),
+                    Position = AnchorPositionMode.TopLeft
+
+                };
+            image.Mutate(x => x
+                .Flip(FlipMode.Horizontal) //To match mirrored webcam image
+                .Resize(resizeOptions)
+
+            );
+
+            vData.ImageData = imageData;
+            frameUri = image.ToBase64String(JpegFormat.Instance);
+        }
+    }
+
+    private async Task NextVisitingDetails()
+    {
+        backBtn = true;
+        await JS.InvokeVoidAsync("wipeOut", "myDiv1", true);
+        await JS.InvokeVoidAsync("wipeIn", "myDiv2", false);
+    }
+
+    private async Task HideDiv()
+    {
+        await JS.InvokeVoidAsync("wipeOut", "myDiv", true);
+
+
+    }
+
+
+
+    private async Task ShowDiv()
+    {
+
+
+        await JS.InvokeVoidAsync("wipeIn","myDiv",false);
+
+
+    }
+
+
+
+    CarriedMaterialModel cMtrlDetails { get; set; } = new CarriedMaterialModel {cMtrl = "", cMtrlQuantity = 1 };
+    List<CarriedMaterialModel> cMtrlList = new List<CarriedMaterialModel>();
+
+
+
+    private void AddCarriedMtrl()
+    {
+        //ctr++;
+        if(cMtrlDetails.cMtrl.Trim() != "")
+        {
+            
+        }
+
+        if (!string.IsNullOrWhiteSpace(cMtrlDetails.cMtrl))
+        {
+            cMtrlList.Add(cMtrlDetails);
+
+            cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+            
+        }
+
+
+
+    }
+    private void ClearCarriedMtrl()
+    {
+
+        //VDataService.AddRangeAsync(cMtrlList);
+        cMtrlList = new List<CarriedMaterialModel>();
+
+    }
+    private void deleteCarriedMtrl(CarriedMaterialModel item)
+    {
+        cMtrlList.Remove(item);
+    }
+
+    public bool registeredVisitorSearch = true;
+    string vidSearch = string.Empty;
+    string lNameSearch = string.Empty;
+    DateOnly dobSearch = DateOnly.FromDateTime(DateTime.Now);
+    string mobSearch = string.Empty;
+
+
+    private VisitorMasterModel? visitorIdSearch = null;
+    private VisitorMasterModel? visitorIdSearchUpd = null;
+
+    private string? searchingFlag = string.Empty;
+    private string? searchingFlagID = string.Empty;
+
+    private async void alreadyVisited()
+    {
+
+        registeredVisitorSearch = true;
+        backBtn = true;
+
+        await JS.InvokeVoidAsync("wipeOut", "myDiv1", true);
+        await JS.InvokeVoidAsync("wipeIn", "myDiv2", false);
+    }
+
+
+
+
+    private async void searchVisitor(string vId)
+    {
+        string vID = string.Empty;
+        string mob = string.Empty;
+
+        vId = NormalizeVisitorID(vId);
+        if (IsValidVisitorID(vId)) { 
+            mob = vId;
+            if (mob != "")
+            {
+                visitorIdSearch = await VDataService.SearchVisitorByMob(mob.ToString());
+            }
+        }
+        else{
+            vID = vId.ToUpper().Replace("(", "").Replace(")", "").Replace("-", "").Trim();
+            if (vID != "")
+            {
+                visitorIdSearch = await VDataService.SearchVisitorById(vID);
+
+            }
+        }
+        // if (vId == "NoId" && mobSearch == "")
+        // {
+        //     vID = vidSearch.ToUpper().Replace("(", "").Replace(")", "").Replace("-", "").Trim();
+        // }
+        // else if (mobSearch != "")
+        // {
+        //     if (mobSearch.StartsWith("0"))
+        //     {
+        //         mobSearch = mobSearch.Substring(1);
+        //     }
+        //     mob = mobSearch;
+        // }
+        // else
+        // {
+        //     vID = vId;
+        // }
+
+        // if(vID != "")
+        // {
+        //     visitorIdSearch = await VDataService.SearchVisitorById(vID);
+
+        // }
+        // if(mob != "")
+        // {
+        //     visitorIdSearch = await VDataService.SearchVisitorByMob(mob.ToString());
+        // }
+
+        vDetails.VisitArea = false;
+        // vDetails.CompanyDepartment = 0;
+        // vDetails.ApprovedBy = "";
+
+        if (visitorIdSearch != null)
+        {
+
+
+            searchingFlag = $"Data Found! ----- {visitorIdSearch.FirstName} {visitorIdSearch.LastName}";
+            var ppp = visitorIdSearch.VisitorId;
+            var visDet1 = await VDataService.GetVDetailsByID(visitorIdSearch.VisitorId);
+            var visDet = await VDataService.GetFavVisitorDetailsByVIdEmp(visitorIdSearch.VisitorId, _eName);
+            if (visDet != null)
+            {
+                visDet.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                visDet.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                visDet.Duration = "1";
+
+                vDetails.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.Duration = visDet.Duration;
+                vDetails.TypeId = visDet.TypeId;
+                vDetails.CountryId = visDet.CountryId;
+                vDetails.CompanySite = visDet.CompanySite;
+                vDetails.Purpose = visDet.Purpose;
+                vDetails.VisitArea = visDet.VisitArea;
+                vDetails.CompanyDepartment = visDet.CompanyDepartment;
+                vDetails.ApprovedBy = visDet.ApprovedBy;
+
+
+            }
+            else if(visDet1 != null){
+                vDetails.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.Duration = visDet1.Duration;
+                vDetails.TypeId = visDet1.TypeId;
+                vDetails.CountryId = visDet1.CountryId;
+                vDetails.CompanySite = visDet1.CompanySite;
+                vDetails.Purpose = visDet1.Purpose;
+                vDetails.VisitArea = visDet1.VisitArea;
+                vDetails.CompanyDepartment = visDet1.CompanyDepartment;
+                vDetails.ApprovedBy = visDet1.ApprovedBy;
+
+            }
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("Data Found!", vID);
+        }
+        else
+        {
+            //searchingFlag = "false";
+            searchingFlag = "No Data Found!";
+            registeredVisitorSearch = true;
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("No Data Found!");
+        }
+
+
+
+    }
+
+
+
+
+
+
+    string? SetFav = "None";
+    public string SelectedFav
+    {
+        get { return SetFav ?? string.Empty; }
+        set
+        {
+            SetFav = value;
+            HandleSelectedFavourite(SetFav);
+        }
+    }
+
+    private async Task HandleSelectedFavourite(string vID)
+    {
+        //alreadyVisited();
+        searchVisitor(vID);
+        // var visDet = await VDataService.GetFavVisitorDetailsByVIdEmp(vID, _eName);
+        // if (visDet != null)
+        // {
+        //     visDet.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+        //     visDet.ToDate = DateOnly.FromDateTime(DateTime.Now);
+        //     visDet.Duration = "1";
+        //     vDetails.VisitDate = visDet.VisitDate;
+        //     vDetails.ToDate = visDet.ToDate;
+        //     vDetails.Duration = visDet.Duration;
+
+        // }
+        _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+    }
+
+
+    private string GetImageFormat(byte[] imageData)
+    {
+        if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
+        {
+            return "png";
+        }
+        else if (imageData[0] == 0xFF && imageData[1] == 0xD8)
+        {
+            return "jpeg";
+        }
+        else
+        {
+            return "jpeg";
+        }
+    }
+
+
+    private async Task SendEmail()
+    {
+        //-------------------------------Email to Approver------------------------------------To Visit--------------------\
+        if (vDetails.ApprovedBy != "NA" && eData != null && vstrData != null)
+        {
+            var vstrDataOnlyId = await VDataService.GetVisitorDataById(vDetails.VisitorId);
+            var approverMail = eData.Where(x => x.EmpName == vDetails.ApprovedBy).Select(y => y.EmpEmail).FirstOrDefault();
+            var visitorMail = vstrDataOnlyId.Email;
+            var visitorName = vstrDataOnlyId.FirstName + " " + vstrDataOnlyId.LastName;
+            var mailMessage = new MimeMessage();
+            if(visitorMail.ToLower().Trim() == "na"){
+                visitorMail = "RehlkoVMS@rehlko.com";
+            }
+            mailMessage.From.Add(new MailboxAddress("VMS", "RehlkoVMS@rehlko.com"));
+            mailMessage.To.Add(new MailboxAddress("VMS", approverMail));
+            mailMessage.Subject = $"Visitor appointment";
+
+            /*
+            mailMessage.Body = new TextPart("plain")
+            {
+                Text = $"Check Your Information- Name: {vData.Name}, Email: {vData.Email}, Comapny: {vData.Company}"
+                };*/
+
+                                                                                    var bodyBuilder = new BodyBuilder();
+            bodyBuilder.HtmlBody = $@"
+            <html>
+                <body>
+                    <p>Hello,</p>
+                    <p>Details of the visitor as given below.</p>
+                    <table style='border: 1px solid #ccc; background-color: skyblue;'>
+                        <tr>
+                            <th style='border: 1px solid #ccc;'>Name</th>
+                            <th style='border: 1px solid #ccc;'>Visit Date</th>
+                            <th style='border: 1px solid #ccc;'>Visit Time</th>
+                            <th style='border: 1px solid #ccc;'>To Date</th>
+                            <th style='border: 1px solid #ccc;'>Purpose</th>
+                            <th style='border: 1px solid #ccc;'>To Meet</th>
+
+
+                        </tr>
+                        <tr>
+                            <td style='border: 1px solid #ccc;'>{visitorName}</td>
+                            <td style='border: 1px solid #ccc;'>{vDetails.VisitDate}</td>
+                            <td style='border: 1px solid #ccc;'>{vDetails.VisitTime}</td>
+                            <td style='border: 1px solid #ccc;'>{vDetails.ToDate}</td>
+                            <td style='border: 1px solid #ccc;'>{vDetails.Purpose}</td>
+                            <td style='border: 1px solid #ccc;'>{vDetails.ApprovedBy}</td>
+
+                        </tr>
+
+                    </table>
+                     <p>
+                        <a href='https://inauw028.kohlerco.com:8054/visitorRequest'>Click Here To Approve/Decline</a>
+                    </p>
+                    <p style='margin-top:1rem'>
+                        Thank You
+                    </p>
+                </body>
+            </html>
+        ";
+
+            mailMessage.Body = bodyBuilder.ToMessageBody();
+
+            using (var client = new SmtpClient())
+            {
+                await client.ConnectAsync("mailhost.kohlerco.com", 25, MailKit.Security.SecureSocketOptions.StartTls);
+                // await client.AuthenticateAsync("rupali.awati@kohler.com", "joewomthjbxxgepm");
+                await client.SendAsync(mailMessage);
+                await client.DisconnectAsync(true);
+            }
+        }
+    }
+
+
+    private static string NormalizeVisitorID(string visitorID)
+    {
+        // If visitorID is 11 digits and starts with '0', remove the first digit
+        if (visitorID.Length == 11 && visitorID.StartsWith("0"))
+        {
+            visitorID = visitorID.Substring(1);
+        }
+        return visitorID;
+    }
+
+    private static bool IsValidVisitorID(string visitorID)
+    {
+        // Check if visitorID is exactly 10 digits and contains only digits
+        return visitorID.Length == 10 && Regex.IsMatch(visitorID, @"^\d{10}$");
+    }
+
+
+
+
+    private ElementReference visitorMONOInput;
+
+    void UpdateVisitorID(ChangeEventArgs e)
+    {
+        mobNoFlag = false;
+        mobNumberError = "";
+        mobNumber = (e.Value as string)?.Trim();
+        if (mobNumber != "" && mobNumber != null && updtBtnUsr == false)
+        {
+            CheckAlreadyByMob();
+        }
+        else{
+            mobNumberError = "";
+
+            _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+
+    }
+    private string mobNumber = string.Empty;
+    private string mobNumberError = string.Empty;
+    private bool mobNoFlag = false;
+
+    private async Task CheckAlreadyByMob(){
+
+        if (mobNumber.Length != 10 && mobNumber != "")
+        {
+            mobNumberError = "Enter Valid Mobile Number.";
+
+            _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }       
+        else{
+            var existingVisitorMob = await VDataService.GetExistingDataAsyncMob(mobNumber);
+            if(existingVisitorMob != null){
+                mobNumberError = "Mobile number already existed";
+                mobNoFlag = true;
+                _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+            }
+
+        }
+    }
+
+
+    private bool updtBtn = false;
+    private bool updtBtnUsr = false;
+
+    private string empChange = string.Empty;
+
+    async Task Update()
+    {
+
+
+        // Reset error message
+        ErrorMessageTime = string.Empty;
+
+        // Validate the selected time
+        if (SelectedHour == null || SelectedMinute == null || (SelectedHour == 0 && SelectedMinute == 0))
+        {
+            ErrorMessageTime = "Invalid visit time (not 00:00).";
+            _ = InvokeAsync(() =>
+              {
+                  StateHasChanged();
+              });
+            updtBtn = false;
+            return; // Prevent form submission
+        }
+
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        //message = string.Empty;
+        JS.InvokeVoidAsync("scrollToTop");
+
+
+
+        vDetails.VisitTime = SelectedTime;
+        if (registeredVisitorSearch == true && visitorIdSearch != null)
+        {
+            vDetails.VisitorId = visitorIdSearch.VisitorId;
+        }
+
+        if (registeredVisitorSearch == false && visitorIdSearch == null)
+        {
+            vDetails.VisitorId = vData.VisitorId;
+        }
+
+        var todayDate = DateOnly.FromDateTime(DateTime.Now);
+        //var existingSchedule = await VDataService.GetExistingSchedule(vDetails.VisitorId, vDetails.VisitDate, vDetails.ToDate);
+        var existingSchedule = await VDataService.GetExistingScheduleWithTime(vDetails.VisitorId, vDetails.VisitDate, vDetails.ToDate); //////////////////////Update for multiple appointemnets today
+
+        if (existingSchedule != null)
+        {
+            vDetails.Id = existingSchedule.Id;
+            if (registeredVisitorSearch == true)
+            {
+                if (visitorIdSearch == null)
+                {
+                    searchingFlag = "Please enter Visitor ID or Mobile Number......";
+                }
+                else
+                {
+                    if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                    {
+                        vDetails.ToDate = vDetails.VisitDate;
+                    }
+                    await VDataService.UpdateVisitingDetails(vDetails);
+                    await VDataService.AddRangeAsync(cMtrlList, existingSchedule.VisitorId);
+                    updtBtn = false;
+                    if(empChange != vDetails.ApprovedBy){
+                        vDetails.SecurityApproval = null;
+                        vDetails.Approval = null;
+                        await SendEmail();
+                    }
+
+                }
+            }
+            else
+            {
+                if (vData.VisitorId == null)
+                {
+                    searchingFlag = "Error: Refresh the Page!";
+                }
+                else
+                {
+                    if (vDetails.ToDate == DateOnly.FromDateTime(todaydt))
+                    {
+                        vDetails.ToDate = vDetails.VisitDate;
+                    }
+
+
+
+
+
+                    await VDataService.UpdateVisitingDetails(vDetails);
+                    await VDataService.AddRangeAsync(cMtrlList, vDetails.VisitorId);
+                    updtBtn = false;
+                    if (empChange != vDetails.ApprovedBy)
+                    {
+                        vDetails.SecurityApproval = null;
+                        vDetails.Approval = null;
+                        await SendEmail();
+                    }
+
+
+
+                }
+            }
+        }
+        else
+        {
+            message = "No Data Found";
+            messageType = Models.AlertMessageType.Warning;
+
+            showErrorMessageFlag = true;
+            _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+            });
+
+
+
+            vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+            vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email = "NA" };
+            frameUri = string.Empty;
+
+
+            cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+            cMtrlList = new List<CarriedMaterialModel>();
+
+
+            vidSearch = string.Empty;
+            lNameSearch = string.Empty;
+            //visitorIdSearch = null;
+            searchingFlag = string.Empty;
+            searchingFlagID = "";
+            dobSearch = DateOnly.FromDateTime(DateTime.Now);
+
+            processing = false;
+            registeredVisitorSearch = true;
+            mobSearch = "";
+            vidSearch = "";
+            _ = InvokeAsync(() =>
+                   {
+                       StateHasChanged();
+                   });
+
+            return;
+        }
+
+
+
+
+        vDetails = new VisitingDetailsModel { VisitorId = string.Empty, VisitDate = DateOnly.FromDateTime(todaydt), CountryId = 1, ToDate = DateOnly.FromDateTime(DateTime.Now.Date), VisitTime = string.Empty, RegistrationDate = DateOnly.FromDateTime(todaydt), VisitArea = false };
+        vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email = "NA" };
+        frameUri = string.Empty;
+
+
+        cMtrlDetails = new CarriedMaterialModel { cMtrl = "", cMtrlQuantity = 1 };
+        cMtrlList = new List<CarriedMaterialModel>();
+
+
+        vidSearch = string.Empty;
+        lNameSearch = string.Empty;
+        //visitorIdSearch = null;
+        searchingFlag = string.Empty;
+        searchingFlagID = "";
+        dobSearch = DateOnly.FromDateTime(DateTime.Now);
+
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+
+
+
+        if (registeredVisitorSearch == true)
+        {
+            if (visitorIdSearch == null)
+            {
+                searchingFlag = "Please Search Visitor";
+                _ = InvokeAsync(() =>
+                {
+                    StateHasChanged();
+                });
+            }
+            else
+            {
+
+
+                visitorIdSearch = null;
+                message = "Visiting Details Updated!";
+                messageType = Models.AlertMessageType.Success;
+                showErrorMessageFlag = true;
+                searchingFlagID = "";
+                _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+
+                // Start a timer to hide the message after 5 seconds
+                Task.Delay(5000).ContinueWith(_ =>
+                {
+                    showErrorMessageFlag = false;
+                    _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+                });
+            }
+        }
+        else
+        {
+            message = "Visiting Details Updated!";
+            messageType = Models.AlertMessageType.Success;
+            showErrorMessageFlag = true;
+            searchingFlagID = "";
+            _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+            });
+        }
+        searchingFlag = "";
+        processing = false;
+        registeredVisitorSearch = true;
+        mobSearch = "";
+        vidSearch = "";
+        searchingFlagID = "";
+        updtBtn = false;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+    }
+
+
+    async Task UpdateUsr()
+    {
+
+
+        processing = true;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+        await JS.InvokeVoidAsync("scrollToTop");
+
+        if (mobNumber.Length != 10)
+        {
+            processing = false;
+            mobNumberError = "Enter Valid Mobile Number";
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+
+            return;
+        }
+        else if (mobNoFlag == true)
+        {
+            processing = false;
+            mobNumberError = "Mobile number already existed";
+            _ = InvokeAsync(() =>
+          {
+              StateHasChanged();
+          });
+            return;
+        }
+        else
+        {
+            mobNumberError = "";
+
+            mobNoFlag = false;
+        }
+        try
+        {
+
+            vData.FirstName = vData.FirstName.ToUpper().Trim().Replace(" ", "");
+            vData.LastName = vData.LastName.ToUpper().Trim().Replace(" ", "");
+            vData.Email = vData.Email.ToLower().Trim().Replace(" ", "");
+            vData.IdProofNo = vData.IdProofNo.Trim().Replace(" ", "");
+            vData.MobileNo = mobNumber;
+            vData.VisitorId = vData.FirstName + vData.LastName + vData.MobileNo ?? "".ToString().Trim();
+
+
+
+
+
+            await VDataService.UpdateVisitorDetails(vData);
+
+
+            //vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = string.Empty };
+
+            message = $"Successfully Updated! YOUR-ID: {vData.VisitorId}";
+
+            messageType = Models.AlertMessageType.Success;
+            searchingFlagID = $"Visitor Updated! ----- Visitor-ID: {vData.VisitorId}";
+
+            showErrorMessageFlag = true;
+            _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+            });
+            //frameUri = string.Empty;
+
+            registeredVisitorSearch = false;
+            searchingFlag = "";
+
+        }
+        catch (Exception e)
+        {
+            vData = new VisitorMasterModel { VisitorId = string.Empty, FirstName = string.Empty, LastName = string.Empty, DOB = DateOnly.FromDateTime(todaydt), Email = "NA" };
+            frameUri = string.Empty;
+            message = $"Error: {e}";
+            messageType = Models.AlertMessageType.Error;
+            showErrorMessageFlag = true;
+            _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+
+            // Start a timer to hide the message after 5 seconds
+            Task.Delay(5000).ContinueWith(_ =>
+            {
+                showErrorMessageFlag = false;
+                _ = InvokeAsync(() =>
+       {
+           StateHasChanged();
+       });
+            });
+
+        }
+
+        updtBtnUsr = false;
+        processing = false;
+        _ = InvokeAsync(() =>
+               {
+                   StateHasChanged();
+               });
+    }
+
+    private async void searchVisitorUpd(string vId)
+    {
+        updtBtn = true;
+        string vID = string.Empty;
+        string mob = string.Empty;
+
+        vId = NormalizeVisitorID(vId);
+        if (IsValidVisitorID(vId))
+        {
+            mob = vId;
+            if (mob != "")
+            {
+                visitorIdSearch = await VDataService.SearchVisitorByMob(mob.ToString());
+            }
+        }
+        else
+        {
+            vID = vId.ToUpper().Replace("(", "").Replace(")", "").Replace("-", "").Trim();
+            if (vID != "")
+            {
+                visitorIdSearch = await VDataService.SearchVisitorById(vID);
+
+            }
+        }
+        // if (vId == "NoId" && mobSearch == "")
+        // {
+        //     vID = vidSearch.ToUpper().Replace("(", "").Replace(")", "").Replace("-", "").Trim();
+        // }
+        // else if (mobSearch != "")
+        // {
+        //     if (mobSearch.StartsWith("0"))
+        //     {
+        //         mobSearch = mobSearch.Substring(1);
+        //     }
+        //     mob = mobSearch;
+        // }
+        // else
+        // {
+        //     vID = vId;
+        // }
+
+        // if(vID != "")
+        // {
+        //     visitorIdSearch = await VDataService.SearchVisitorById(vID);
+
+        // }
+        // if(mob != "")
+        // {
+        //     visitorIdSearch = await VDataService.SearchVisitorByMob(mob.ToString());
+        // }
+
+        vDetails.VisitArea = false;
+        // vDetails.CompanyDepartment = 0;
+        // vDetails.ApprovedBy = "";
+
+        if (visitorIdSearch != null)
+        {
+
+
+            searchingFlag = $"Data Found! ----- {visitorIdSearch.FirstName} {visitorIdSearch.LastName}";
+            var ppp = visitorIdSearch.VisitorId;
+            var visDet1 = await VDataService.GetVDetailsByID(visitorIdSearch.VisitorId);
+            var visDet = await VDataService.GetFavVisitorDetailsByVIdEmp(visitorIdSearch.VisitorId, _eName);
+            if (visDet != null)
+            {
+                visDet.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                visDet.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                visDet.Duration = "1";
+
+                vDetails.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.Duration = visDet.Duration;
+                vDetails.CompanyDepartment = visDet.CompanyDepartment;
+                vDetails.ApprovedBy = visDet.ApprovedBy;
+                vDetails.TypeId = visDet.TypeId;
+                vDetails.CountryId = visDet.CountryId;
+                vDetails.CompanySite = visDet.CompanySite;
+                vDetails.Purpose = visDet.Purpose;
+                vDetails.VisitArea = visDet.VisitArea;
+
+
+            }
+            else if (visDet1 != null)
+            {
+                vDetails.VisitDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.ToDate = DateOnly.FromDateTime(DateTime.Now);
+                vDetails.VisitTime = visDet1.VisitTime;
+                vDetails.Duration = visDet1.Duration;
+                vDetails.TypeId = visDet1.TypeId;
+                vDetails.CountryId = visDet1.CountryId;
+                vDetails.CompanySite = visDet1.CompanySite;
+                vDetails.Purpose = visDet1.Purpose;
+                vDetails.VisitArea = visDet1.VisitArea;
+                vDetails.CompanyDepartment = visDet1.CompanyDepartment;
+                vDetails.ApprovedBy = visDet1.ApprovedBy;
+                vDetails.VisitArea = visDet1.VisitArea;
+                vDetails.CompanyDepartment = visDet1.CompanyDepartment;
+                vDetails.ApprovedBy = visDet1.ApprovedBy;
+                empChange = visDet1.ApprovedBy;
+                vDetails.SecurityApproval = visDet1.SecurityApproval;
+
+            }
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("Data Found!", vID);
+        }
+        else
+        {
+            //searchingFlag = "false";
+            searchingFlag = "No Data Found!";
+            registeredVisitorSearch = true;
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("No Data Found!");
+        }
+
+
+
+    }
+
+
+    private async void searchVisitorDetailUpd(string vId)
+    {
+        updtBtnUsr = true;
+        string vID = string.Empty;
+        string mob = string.Empty;
+
+        vId = NormalizeVisitorID(vId);
+        if (IsValidVisitorID(vId))
+        {
+            mob = vId;
+            if (mob != "")
+            {
+                visitorIdSearchUpd = await VDataService.SearchVisitorByMob(mob.ToString());
+               
+            }
+        }
+        else
+        {
+            vID = vId.ToUpper().Replace("(", "").Replace(")", "").Replace("-", "").Trim();
+            if (vID != "")
+            {
+                visitorIdSearchUpd = await VDataService.SearchVisitorById(vID);
+                
+            }
+        }
+       
+
+        if (visitorIdSearchUpd != null)
+        {
+
+
+            searchingFlag = $"Data Found! ----- {visitorIdSearchUpd.FirstName} {visitorIdSearchUpd.LastName}";
+
+            vData.Id = visitorIdSearchUpd.Id;
+            vData.FirstName = visitorIdSearchUpd.FirstName;
+            vData.LastName = visitorIdSearchUpd.LastName;
+            vData.Company = visitorIdSearchUpd.Company;
+            vData.Email = visitorIdSearchUpd.Email;
+            vData.MobileNo = visitorIdSearchUpd.MobileNo;
+            vData.IdProof = visitorIdSearchUpd.IdProof;
+            vData.IdProofNo = visitorIdSearchUpd.IdProofNo;
+            vData.Gender = visitorIdSearchUpd.Gender;
+            vData.Address = visitorIdSearchUpd.Address;
+
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("Data Found!", vID);
+        }
+        else
+        {
+            //searchingFlag = "false";
+            searchingFlag = "No Data Found!";
+            registeredVisitorSearch = true;
+            _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+
+            Console.WriteLine("No Data Found!");
+        }
+
+
+
+    }
+
+
+
+
+    void HandleEnter(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            if (vidSearch != "" && vidSearch != null)
+            {
+                searchVisitor(vidSearch);
+            }
+        }
+
+        
+
+    }
+
+}
+

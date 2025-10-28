@@ -1,0 +1,411 @@
+﻿@page "/allvisitordata"
+
+@using Microsoft.AspNetCore.Authorization
+@using VisitorManagementSystem.Data
+@using VisitorManagementSystem.Models.CarriedMtrlModel
+@attribute [Authorize(Roles = "Admin, User, Security")]
+
+@inject IVDataService VDataService
+@inject VMSDbContext vmsDbContext
+@inject IJSRuntime JS
+@rendermode InteractiveServer
+
+<script>
+    function showModal() {
+        var modal = document.getElementById('photoModel');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function hideModal() {
+        var modal = document.getElementById('photoModel');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+
+
+    function showModalCM() {
+        var modal = document.getElementById('cmModel');
+        modal.classList.add('show');
+        modal.style.display = 'block';
+    }
+
+    function hideModalCM() {
+        var modal = document.getElementById('cmModel');
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+</script>
+
+<PageTitle>
+    All Visitors
+</PageTitle>
+
+<div class="row mb-3">
+    <div class="col-10">
+        <h4 class="h3 mb-0 text-gray-800" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif">All Visitor Data</h4>
+
+    </div>
+    <div class="col-2">
+        <input @bind="SelectedDate" type="date" class="form-control" id="selectdate" placeholder="@dt" />
+
+    </div>
+
+</div>
+
+
+
+
+@if (combinedData == null)
+{
+    <span>Loading...</span>
+}
+else if (combinedData.Count == 0)
+{
+    <span>No Data Found.</span>
+}
+else
+{
+    <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5 align-middle table-condensed table-sm">
+        <thead class="table-primary">
+            <tr>
+                <th>Visitor Name</th>
+                <th>Company</th>
+                <th>Mob</th>
+                <th>Visit Date</th>
+                <th>Visit Time</th>
+                <th>To Visit</th>
+                <th>Dept.</th>
+                <th>Purpose</th>
+                <th>Visitor Photo</th>
+                <th>Carried Material</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var vd in combinedData.OrderByDescending(x => x.VisitingDetails.VisitTime))
+            {
+
+                <tr>
+                    <td>@vd.VisitorData.FirstName @vd.VisitorData.LastName</td>
+                    <td>@vd.VisitorData.Company</td>
+
+                    <td>@vd.VisitorData.MobileNo</td>
+                    <td>@vd.VisitingDetails.VisitDate</td>
+                    <td>@vd.VisitingDetails.VisitTime</td>
+                    <td>@vd.VisitingDetails.ApprovedBy</td>
+                    <td>@department.Where(x => x.DeptId == (vd.VisitingDetails.CompanyDepartment)).Select(x => x.DeptName).FirstOrDefault()</td>
+                    <td>@vd.VisitingDetails.Purpose</td>
+                    @if (vd.VisitorData.ImageData != null)
+                    {
+                        var base64String = Convert.ToBase64String(vd.VisitorData.ImageData);
+                        var imageUrl = $"data:image/{GetImageFormat(vd.VisitorData.ImageData)};base64,{base64String}";
+                        <td>
+                            <img src="@imageUrl" width="25" height="25" alt="Visitor" @onclick="() => ShowPhoto(vd.VisitorData.ImageData)" /></td>
+                    }
+                    else{
+                        <td></td>
+                    }
+                    <td><span type="button" class="btn btn-link" @onclick="() => ShowCarriedMtrl(vd.VisitingDetails.VisitorId,vd.VisitingDetails.VisitDate)">View</span></td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+
+@*-----------------------------------------------------------------Photo Model----------------------------------------------------------------------------------------*@
+<div class="modal fade" id="photoModel" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="photoModel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" style="background-color:#d3d3d3; border-radius: 0px !important;box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4) !important;">
+
+            <div class="modal-body px-5">
+                <div class="d-flex justify-content-between">
+
+                    <h6>Photo</h6>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="HideModel"></button>
+                </div>
+                <hr style="color:black" />
+                <div class="pb-3" style="font-family: 'Lato', sans-serif;">
+
+                    <img src="@PhotoModelUrl" width="200" height="200" alt="Visitor" class="rounded mx-auto d-block" />
+
+                </div>
+                @*  <div style="display: flex;justify-content: flex-end;">
+
+                    <button type="button" class="button-14" data-bs-dismiss="modal" @onclick="HideModel">Back</button>
+                </div> *@
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@*-----------------------------------------------------------------Carried Mtrl Model----------------------------------------------------------------------------------------*@
+<div class="modal fade" id="cmModel" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="photoModel" aria-hidden="true">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content" style="background-color:#d3d3d3; border-radius: 0px !important;box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4) !important;">
+
+            <div class="modal-body px-5">
+                <div class="d-flex justify-content-between">
+
+                    <h6>Carried Matrial</h6>
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @onclick="HideModelCM"></button>
+                </div>
+                <hr style="color:black" />
+                <div class="pb-3" style="font-family: 'Lato', sans-serif;">
+
+                    @if (carriedMtrlData == null)
+                    {
+                        <span>Loading...</span>
+                    }
+                    else if (carriedMtrlData.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5 align-middle table-condensed table-sm">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th>Sr.No.</th>
+
+                                    <th>Carried Material</th>
+                                    <th>QTY</th>
+                                    <th>Date Time</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{
+                                    int serialNumber = 1; // Initialize the serial number
+                                }
+                                @foreach (var cd in carriedMtrlData)
+                                {
+
+                                    <tr>
+                                        <td>@serialNumber</td>
+                                        <td>@cd.cMtrl</td>
+                                        <td>@cd.cMtrlQuantity</td>
+                                        @if(cd.DateTime != null)
+                                        {
+                                            <td>@cd?.DateTime</td>
+                                        }
+                                        else
+                                        {
+                                            <td>-</td>
+                                        }
+
+                                    </tr>
+                                    serialNumber++;
+                                }
+                            </tbody>
+                        </table>
+                    }
+
+                </div>
+               
+            </div>
+
+        </div>
+    </div>
+</div>
+
+@code {
+    List<VisitorMasterModel>? vData = null;
+    List<VisitingDetailsModel>? vDetailsWeekly = null;
+
+    List<VisitingDetailsModel>? vDetailsDateWise = null;
+    List<DeptData>? department = null;
+    List<CarriedMaterialModel>? carriedMtrlData = null;
+    List<CarriedMaterialModel>? carriedMtrlDataORG = null;
+
+    private string dt { get; set; } = DateTime.Now.ToString("yyyy-MM-dd");
+
+
+
+    private string? userName;
+
+
+
+
+    public class VDataVDetailsVTransactionModel
+    {
+        public VisitorMasterModel? VisitorData { get; set; }
+        public VisitingDetailsModel? VisitingDetails { get; set; }
+        public VisitorTransactionModel? TransactionDetail { get; set; }
+    }
+    List<VDataVDetailsVTransactionModel>? combinedData = null;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        vData = await VDataService.GetAllVisitorData();
+        vDetailsWeekly = await VDataService.GetDateWiseVisitingDetailsWeekly7DaysAhead();
+        carriedMtrlDataORG = await VDataService.GetCarriedMtrlData();
+        carriedMtrlData = carriedMtrlDataORG;
+
+
+
+        //vDetailsToday = vDetailsToday.Where(x => x.VisitDate == DateTime.Now.ToString("yyyy-MM-dd")).ToList();
+        // vData = vData.Where(x => vDetailsToday.Any(y => y.VisitorId == x.VisitorId)).ToList();
+
+
+
+        combinedData = vData.Join(vDetailsWeekly, vd => vd.VisitorId, vd => vd.VisitorId,
+        (vd, vdd) => new VDataVDetailsVTransactionModel
+            {
+                VisitorData = vd,
+                VisitingDetails = vdd
+            }).ToList();
+
+
+
+
+
+
+        department = await VDataService.GetDeptData();
+
+
+
+    }
+
+
+
+
+
+
+    private DateOnly _selectedDate = DateOnly.FromDateTime(DateTime.Now.Date);
+
+    public DateOnly SelectedDate
+    {
+        get { return _selectedDate; }
+        set
+        {
+            _selectedDate = value;
+            DateWiseReport();
+            _ = InvokeAsync(() =>
+            {
+                StateHasChanged();
+            });
+        }
+    }
+
+    public async Task DateWiseReport()
+    {
+        vData = await VDataService.GetAllVisitorData();
+        vDetailsDateWise = await VDataService.GetDateWiseVisitingDetailsReportNoTransactions(_selectedDate);
+
+
+
+
+        combinedData = vData.Join(vDetailsDateWise, vd => vd.VisitorId, vd => vd.VisitorId,
+        (vd, vdd) => new VDataVDetailsVTransactionModel
+            {
+                VisitorData = vd,
+                VisitingDetails = vdd
+            }).ToList();
+
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+        //  combinedData = combinedData.Join(vTransactions, vd => vd.VisitorData.VisitorId, vt => vt.VisitorId,
+        // (vd, vt) => new VDataVDetailsVTransactionModel
+        //     {
+        //         VisitorData = vd.VisitorData,
+        //         VisitingDetails = vd.VisitingDetails,
+        //         TransactionDetail = vt // add TransactionDetail property to VisitorDataAndDetailsModel
+        //     }).ToList();
+
+
+    }
+
+
+    string PhotoModelUrl = string.Empty;
+
+    private async Task ShowPhoto(byte[] purl)
+    {
+        var base64String = Convert.ToBase64String(purl);
+        PhotoModelUrl = $"data:image/{GetImageFormat(purl)};base64,{base64String}";
+
+        await JS.InvokeVoidAsync("showModal");
+    }
+
+
+
+    protected async Task HideModel()
+    {
+        try
+        {
+         
+            //NavigationManager.NavigateTo(NavigationManager.Uri, true);
+            await JS.InvokeVoidAsync("hideModal");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+    private async Task ShowCarriedMtrl(string vId, DateOnly vDate)
+    {
+        carriedMtrlData = carriedMtrlDataORG.Where(x => x.VisitorId == vId && x.VisitDate == vDate).ToList();
+        await JS.InvokeVoidAsync("showModalCM");
+    }
+    protected async Task HideModelCM()
+    {
+        try
+        {
+            //NavigationManager.NavigateTo(NavigationManager.Uri, true);
+            await JS.InvokeVoidAsync("hideModalCM");
+            _ = InvokeAsync(() =>           // Renders the screen when message to be set
+            {
+                StateHasChanged();
+            });
+        }
+        catch (Exception ex)
+        {
+
+        }
+
+    }
+
+    private async Task LoadDepartmentData()
+    {
+        department = await VDataService.GetDeptData();
+    }
+
+    private void UpdateState()
+    {
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+
+    }
+
+
+
+
+    private string GetImageFormat(byte[] imageData)
+    {
+        if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
+        {
+            return "png";
+        }
+        else if (imageData[0] == 0xFF && imageData[1] == 0xD8)
+        {
+            return "jpeg";
+        }
+        else
+        {
+            return "jpeg";
+        }
+    }
+}

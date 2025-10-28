@@ -1,0 +1,1920 @@
+﻿@page "/dashboard"
+
+
+
+@inject IVDataService VDataService
+@inject INitgenService NitgenService
+
+
+@using ClosedXML.Excel
+@using Microsoft.AspNetCore.Authorization
+@using System.Globalization
+@using VisitorManagementSystem.Data
+@using VisitorManagementSystem.Models.EmployeesModels
+
+@inject VMSDbContext vmsDbContext
+@inject NitgenDbContext nitgenDbContext
+
+@rendermode InteractiveServer
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+@attribute [Authorize(Roles = "Admin, User, Security")]
+
+@implements IDisposable
+
+
+
+<style>
+    .table-responsive {
+       max-height: 85vh;
+
+        /*max-width: 1100px;*/
+    }
+    /* For the entire page */
+    ::-webkit-scrollbar {
+        width: 7px; /* Width of the scrollbar */
+        height: 12px; /* Height of the scrollbar */
+    }
+
+    ::-webkit-scrollbar-track {
+        background: #f1f1f1; /* Background of the scrollbar track */
+        border-radius: 10px; /* Round corners for the track */
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: #888; /* Color of the scrollbar thumb */
+        border-radius: 10px; /* Round corners for the thumb */
+    }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555; /* Color of the scrollbar thumb on hover */
+        }
+
+    thead {
+        position: sticky;
+        top: -1px;
+        background-color: white;
+        font-size: 9px;
+    }
+
+    .table-condensed {
+        font-size: 8px;
+    }
+
+    .fontSize11 {
+        font-size:10.5px;
+        font-weight: bold;
+    }
+
+    .hover-image:hover {
+        width: 150px;
+        height: 170px;
+    }
+
+    .dropdown-menu {
+        background-color: rgba(255, 255, 255, 0.8); /* adjust the opacity value (0.8) to your liking */
+        backdrop-filter: blur(5px); /* optional, adds a blur effect to the background */
+    }
+
+    @@media (max-width: 1400px) { /* xl screen size */
+     .col-xl-2 .card-body {
+        font-size: 0.9rem; /* adjust font size */
+      }
+     .col-xl-2 .h4 {
+        font-size: 1rem; /* adjust heading font size */
+      }
+     .col-xl-2 .fontSize11 {
+        font-size: 0.63rem; /* adjust font size */
+      }
+    }
+
+@*
+    .dropdown-toggle:hover + .dropdown-menu {
+        display: block;
+    }
+
+    .first-div:hover .dropdown-menu {
+        display: block;
+    }
+
+    .dropdown-menu:hover {
+        display: block;
+    }*@
+
+    .bottom-row {
+        position: relative !important;
+        bottom: 0;
+        z-index: 1;
+    }
+
+    
+.chart-container {
+    border: 2px solid #000; /* Add a solid black border */
+    padding: 20px; /* Add padding inside the div */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5); /* Add shadow effect */
+    border-radius: 8px; /* Optional: rounded corners */
+
+}
+
+</style>
+
+
+<script>
+    function downloadFile(fileName, content) {
+        const blob = new Blob([content], { type: 'application/octet-stream' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+        function hideDiv() {
+        var div = document.getElementById('sidebardiv');
+        if (div) {
+            div.style.display = 'none'; // Hides the div
+        }
+    }
+</script>
+
+
+
+<PageTitle>
+    Dashboard
+</PageTitle>
+
+
+
+<!-- Begin Page Content -->
+<div class="container-fluid">
+
+    <!-- Page Heading -->
+    <div class="d-sm-flex align-items-center justify-content-between mb-2">
+        <h4 class="h3 mb-0 text-gray-800"  style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif">Dashboard</h4>
+        <div class="d-flex">
+
+            <div class="d-flex">
+                @* <div style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;" class="fs-6 mx-4">
+                    <DigitalClock />
+                </div> *@
+               @*  <button class="btn btn-sm btn-primary shadow-sm" @onclick="ExportToExcel">
+                    <i class="fas fa-download fa-sm text-white-50"></i> Generate Report
+                </button> *@
+                <div>
+                     <svg xmlns="http://www.w3.org/2000/svg" width="23" height="23" fill="darkblue" class="bi bi-download" viewBox="0 0 16 16" role="button" @onclick="ExportToExcel">
+                      <path d="M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5"/>
+                      <path d="M7.646 11.854a.5.5 0 0 0 .708 0l3-3a.5.5 0 0 0-.708-.708L8.5 10.293V1.5a.5.5 0 0 0-1 0v8.793L5.354 8.146a.5.5 0 1 0-.708.708z"/>
+                    </svg>
+                </div>
+
+            </div>
+            @if(downloading == true)
+            {
+                <div style="margin-left: 0.5rem;">
+                    <p class="h6 text-italic" style="align-self: flex-end; font-style:italic; text-shadow: 1px 1px 2px rgba(0,0,0,0.5);">Downloading...</p>
+                </div>
+            }
+
+        </div>
+
+    </div>
+
+    <!-- Content Row -->
+    <div class="row" style="padding-bottom: 0% !important;">
+
+        <!-- Earnings (Monthly) Card Example -->
+        <div class="col-xl-2 col-md-6 mb-sm-5 " role="button" @onclick="totalVstrDataDaily">
+            <div class="card border-left-primary shadow " style="
+              background-image: linear-gradient(to left, #6c5ce7, #3b3f54);
+              border-radius: 0px!important;
+              box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important; height: 80%
+            "> <!--py-2-->
+                <div class="card-body d-flex align-items-center" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (vDetailsToday == null)
+                            {
+                                <span>Data Loading...</span>
+                            }
+                            else if (vDetailsToday.Count == 0)
+                            {
+                                <span>No Data Found.</span>
+                            }
+                            else
+                            {
+                                int countDaily = 0;
+
+                                foreach (var vd in vDetailsToday)
+                                {
+
+
+
+                                    //if (String.Equals(str.Substring(0, 7), DateTime.Today.ToString("yyyy-MM")))
+                                    if (vd.VisitDate <= DateOnly.FromDateTime(DateTime.Now) && vd.ToDate >= DateOnly.FromDateTime(DateTime.Now))
+                                    {
+                                        countDaily++;
+                                    }
+
+
+                                }
+                                <div class="h4 mb-0 font-weight-bold text-light" style="margin-left: 10px;"><b>@countDaily</b></div>
+
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            MO Gate / Total Visitors
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 end-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><button class="dropdown-item" type="button">Another action</button></li>
+                            <li><button class="dropdown-item" type="button" @onclick="DailyReport">Download Report</button></li>
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div class="col-xl-2 col-md-6 mb-sm-5 first-div" role="button" @onclick="CheckinReport">
+            <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #34A853, #2F735B);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%
+            ">
+                <!--py-2-->
+                <div class="card-body d-flex align-items-center" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (countCheckin == 0)
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>0</b></div>
+                            }
+                            else
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>@countCheckin</b></div>
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            Check - In (@DateTime.Today.ToString("dd-MM-yyyy"))
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 end-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><button class="dropdown-item" type="button" @onclick="CheckinReport">Check-In Report</button></li>
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div class="col-xl-2 col-md-6 mb-sm-5 first-div" role="button" @onclick="CheckoutReport">
+            <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #964B00, #78493C);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%
+            ">
+                <!--py-2-->
+                <div class="card-body d-flex align-items-center" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (countCheckout == 0)
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>0</b></div>
+                            }
+                            else
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>@countCheckout</b></div>
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            Check - Out (@DateTime.Today.ToString("dd-MM-yyyy"))
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 end-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><button class="dropdown-item" type="button" @onclick="CheckoutReport">Check-Out Report</button></li>
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xl-2 col-md-6 mb-sm-5 first-div" role="button" @onclick="InCompanyReport">
+            <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #00BCD4, #0097A7);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%
+            ">
+                <!--py-2-->
+                <div class="card-body d-flex align-items-center" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (inCompany == 0)
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>0</b></div>
+                            }
+                            else
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>@inCompany</b></div>
+
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            In - Company (@DateTime.Today.ToString("dd-MM-yyyy"))
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 end-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><button class="dropdown-item" type="button" @onclick="InCompanyReport">In Company Report</button></li>
+                        </ul>
+
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+
+
+        <div class="col-xl-2 col-md-6 mb-sm-5 first-div" role="button" @onclick="WeeklyReport">
+            <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #9C27B0, #E91E63);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%
+            ">
+                <!--py-2-->
+                <div class="card-body d-flex align-items-center" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (countWeekly == 0)
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>0</b></div>
+                            }
+                            else
+                            {
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>@countWeekly</b></div>
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            Total Visitors (Weekly)
+                        </div>
+                    </div>
+                    <div class="position-absolute top-0 end-0">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><button class="dropdown-item" type="button" @onclick="WeeklyReport">Weekly Report</button></li>
+                        </ul>
+
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+
+        <div class="col-xl-2 col-md-6 mb-sm-5" role="button" @onclick="PendingRequestReport">
+            <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #03A9F4, #2196F3);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%
+            ">
+                <!--py-2-->
+                <div class="card-body d-flex align-items-center first-div" style="padding: 2% 0% 0% 7% !important">
+                    <div style="align-items: center; justify-content: space-between;">
+                        <div style="display: flex; align-items: center; justify-content: space-between;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                            </svg>
+
+                            @if (vDetailsToday == null)
+                            {
+                                <span>Data Loading...</span>
+                            }
+                            else if (vDetailsToday.Count == 0)
+                            {
+                                <span>No Data Found.</span>
+                            }
+                            else
+                            {
+                                int countPending = 0;
+
+                                foreach (var vd in vDetailsToday)
+                                {
+
+                                    if (vd.SecurityApproval is null && vd.Approval is null)
+                                    {
+                                        countPending++;
+                                    }
+
+                                }
+                                <div class="h4 mb-0 font-weight-bold text-light"><b>@countPending</b></div>
+
+                            }
+                        </div>
+                        <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                            Pending Requests
+                        </div>
+                    </div>
+                    <div class="">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle position-absolute top-0 end-0 mt-2" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu position-absolute top-100 start-0">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><button class="dropdown-item" type="button" @onclick="PendingRequestReport">Pending Request Report</button></li>
+                        </ul>
+
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+
+
+    </div>
+
+
+
+
+    <!-- Content Row -->
+
+
+
+
+    <!-- Content Row -->
+
+
+
+
+
+    <div class="row" style="padding-top: 0% !important;">
+
+
+
+
+
+        @if(vstrTable == true){
+            <div class="table-responsive col-xl-6 col-md-6 mb-sm-5">
+                <div class="col-sm-12 mr-1">
+                    @if (vData == null && vDetailsToday == null)
+                    {
+                        <span>Loading...</span>
+                    }
+                    else if (vData!.Count == 0 && vDetailsToday!.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5 align-middle table-condensed">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Visitor Name</th>
+
+                                    <th>Mob</th>
+
+                                    <th>Dept</th>
+                                    <th>To Visit</th>
+                                    <th>Visit Date</th>
+                                    <th>Dur</th>
+                                    <th>To Date</th>
+                                    <th>Visit Time</th>
+                                    <th>Approval</th>
+                                    <th>Checkin</th>
+                                    <th>Checkout</th>
+                                    <th>Photo</th>
+                                    <!-- <th>Visitor Photo</th> -->
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                                
+                                    @foreach (var vd in combinedData!.OrderByDescending(x => x.VisitingDetails.VisitTime))
+                                    {
+
+
+
+                                        <tr>
+                                            <td class="fw-bold">@vd.VisitorData?.FirstName @vd.VisitorData?.LastName</td>
+
+                                            <td class="fw-bold">@vd.VisitorData?.MobileNo</td>
+
+                                            @foreach (var dept in department!)
+                                            {
+                                                if (vd.VisitingDetails?.CompanyDepartment == dept.DeptId)
+                                                {
+                                                    <td class="fw-bold">@dept.DeptName</td>
+                                                }
+                                            }
+
+
+
+
+                                            <td class="fw-bold">@vd.VisitingDetails?.ApprovedBy</td>
+                                            <td class="fw-bold">@vd.VisitingDetails?.VisitDate</td>
+                                            <td class="fw-bold">@vd.VisitingDetails?.Duration</td>
+                                            <td class="fw-bold">@vd.VisitingDetails?.ToDate</td>
+                                            <td class="fw-bold">@vd.VisitingDetails?.VisitTime</td>
+
+                                            @if (vd.VisitingDetails?.Approval == "Approved" || vd.VisitingDetails?.SecurityApproval == "Yes")
+                                            {
+                                                <td class="text-success fw-bold">Approved</td>
+                                            }
+                                            else if (vd.VisitingDetails?.Approval == "Cancelled")
+                                            {
+                                                <td class="text-danger fw-bold">O</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-danger fw-bold">On Hold</td>
+                                            }
+
+
+                                            @{
+                                                bool hasTransaction = false;
+                                            }
+                                            @* @foreach (var vt in vTransactions!)
+                                            {
+                                                @if (vd.VisitingDetails?.VisitorId == vt.VisitorId)
+                                                {
+                                                    hasTransaction = true;
+                                                    if (vt.CheckIn != "")
+                                                    {
+                                                        <td class="text-dark fw-bold">@vt.CheckIn</td>
+                                                    }
+                                                    if (vt.CheckOut != "")
+                                                    {
+                                                        <td class="text-danger fw-bold">@vt.CheckOut</td>
+                                                    }
+                                                }
+                                            } *@
+                                        @foreach (var vt in vTransactions
+                                       .GroupBy(x => x.VDetails_Id)
+                                       .Select(g => g.OrderByDescending(x => x.CheckIn).FirstOrDefault()))
+                                        {
+                                            if (vd.VisitingDetails?.Id == vt?.VDetails_Id)
+                                            {
+                                                hasTransaction = true;
+                                                if (!string.IsNullOrEmpty(vt.CheckIn))
+                                                {
+                                                    <td class="text-dark fw-bold">@vt.CheckIn</td>
+                                                }
+                                                else{
+                                                    <td class="text-dark fw-bold"></td>
+                                                }
+                                                if (!string.IsNullOrEmpty(vt.CheckOut))
+                                                {
+                                                    <td class="text-danger fw-bold">@vt.CheckOut</td>
+                                                }
+                                                else{
+                                                    <td class="text-dark fw-bold"></td>
+                                                }
+                                            }
+                                        }
+                                            @if (!hasTransaction)
+                                            {
+                                                <td class="text-dark fw-bold">-</td>
+                                                <td class="text-dark fw-bold">-</td>
+                                            }
+                                            @if (vd.VisitorData?.ImageData != null)
+                                            {
+                                                var base64String = Convert.ToBase64String(vd.VisitorData.ImageData);
+                                                var imageUrl = $"data:image/{GetImageFormat(vd.VisitorData.ImageData)};base64,{base64String}";
+                                                <td><img class="hover-image" src="@imageUrl" width="45" height="50" alt="Visitor" /></td>
+                                            }
+                                            else
+                                            {
+                                                <td class="text-dark fw-bold">No Image</td>
+                                            }
+
+                                            @*
+                                    @if (vd.ImageData != null)
+                                    {
+                                    var base64String = Convert.ToBase64String(vd.ImageData);
+                                    var imageUrl = $"data:image/{GetImageFormat(vd.ImageData)};base64,{base64String}";
+                                    <td><img src="@imageUrl" width="45" height="50" alt="Visitor" class="rounded mx-auto d-block" /></td>
+                                    }*@
+                                        </tr>
+                                    }
+                                
+                               
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        }
+        else{
+            <div class="table-responsive col-xl-8 col-md-6 mb-sm-5">
+                <div class="col-sm-12 mr-1">
+                    @if (empTransactions == null && empNitgen == null)
+                    {
+                        <span>Loading...</span>
+                    }
+                    else if (empTransactions!.Count == 0 && empNitgen!.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5 align-middle table-condensed">
+                            <thead class="table-success">
+                                <tr>
+                                    <th>Employee Name</th>
+                                    <th>Date</th>
+                                    <th>Check-In</th>
+
+                                    <th>Check-Out</th>
+
+                                </tr>
+                            </thead>
+                            <tbody class="table-group-divider">
+                                @foreach (var userGroup in empTransactions.GroupBy(x => x.UserID))
+                                {
+                                    // For each user group, further group by TransactionTime.Date
+                                    foreach (var dateGroup in userGroup.GroupBy(x => x.TransactionTime.Date))
+                                    {
+                                        // Get the first and last records for the current date group
+                                        var firstRecord = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault();
+                                        var lastRecord = dateGroup.OrderByDescending(e => e.TransactionTime).FirstOrDefault();
+
+                                        <tr>
+                                            @if (firstRecord != null)
+                                            {
+                                                // Find the employee name based on UserID
+                                                var emp = empNitgen.FirstOrDefault(emp => emp.ID == firstRecord.UserID);
+                                                if (emp != null)
+                                                {
+                                                    <td class="fw-bold">@emp.Name</td>
+                                                }
+                                                else
+                                                {
+                                                    <td class="fw-bold">Unknown Employee</td>
+                                                }
+
+                                                // Display the date and the first transaction time
+                                                <td class="fw-bold">@firstRecord.TransactionTime.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)</td>
+                                                <td class="fw-bold">@firstRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)</td>
+                                            }
+
+                                            @if (lastRecord != null)
+                                            {
+                                                // Display the last transaction time
+                                                <td class="fw-bold">@lastRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture)</td>
+                                            }
+                                            else
+                                            {
+                                                <td class="fw-bold">N/A</td>
+                                            }
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="col-xl-6 col-md-6 mb-sm-6">
+           
+            <div class="row">
+                <div class="col-xl-4 col-md-4 mb-sm-4" role="button" @onclick="TotalEmployeeReport">
+                    <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #03A9F4, #2196F3);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%;border-radius: 15px 50px 30px !important;
+                    ">
+                        <!--py-2-->
+                        <div class="card-body d-flex align-items-center first-div" style="padding: 2% 0% 0% 12% !important">
+                            <div style="align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                                    </svg>
+
+                                    <div class="h4 mb-0 font-weight-bold text-light"><b>@empTotal</b></div>
+                                </div>
+                                <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                                    Total Employees
+                                </div>
+                            </div>
+                            <div class="">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle position-absolute top-0 mt-2" style="margin-left: 10%" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                                    <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                                </svg>
+                                <ul class="dropdown-menu position-absolute top-100 start-0">
+                                    <li><a class="dropdown-item" href="#">Action</a></li>
+                                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                                    <li><button class="dropdown-item" type="button" @onclick="PendingRequestReport">Total Employees</button></li>
+                                </ul>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-4 col-md-4 mb-sm-4" role="button" @onclick="PendingRequestReport">
+                    <div class="card border-left-primary shadow" style="
+               background-image: linear-gradient(to left, #03A9F4, #2196F3);
+               border-radius: 0px!important;
+               box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%;border-radius: 15px 50px 30px !important;
+                    ">
+                        <!--py-2-->
+                        <div class="card-body d-flex align-items-center first-div" style="padding: 2% 0% 0% 12% !important">
+                            <div style="align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                                    </svg>
+
+                                    <div class="h4 mb-0 font-weight-bold text-light"><b>@empCheckIn</b></div>
+                                </div>
+                                <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                                    Emp Check-In
+                                </div>
+                            </div>
+                            <div class="">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle position-absolute top-0 mt-2" style="margin-left: 10%" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                                    <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                                </svg>
+                                <ul class="dropdown-menu position-absolute top-100 start-0">
+                                    <li><a class="dropdown-item" href="#">Action</a></li>
+                                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                                    <li><button class="dropdown-item" type="button" @onclick="PendingRequestReport">Pending Request Report</button></li>
+                                </ul>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+
+                <div class="col-xl-4 col-md-4 mb-sm-4" role="button" @onclick="PendingRequestReport">
+                    <div class="card border-left-primary shadow" style="
+       background-image: linear-gradient(to left, #03A9F4, #2196F3);
+       border-radius: 0px!important;
+       box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;height: 80%; border-radius: 15px 50px 30px !important;
+                    ">
+                        <!--py-2-->
+                        <div class="card-body d-flex align-items-center first-div" style="padding: 2% 0% 0% 12% !important">
+                            <div style="align-items: center; justify-content: space-between;">
+                                <div style="display: flex; align-items: center; justify-content: space-between;">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="white" class="bi bi-people-fill" viewBox="0 0 16 16">
+                                        <path d="M7 14s-1 0-1-1 1-4 5-4 5 3 5 4-1 1-1 1zm4-6a3 3 0 1 0 0-6 3 3 0 0 0 0 6m-5.784 6A2.24 2.24 0 0 1 5 13c0-1.355.68-2.75 1.936-3.72A6.3 6.3 0 0 0 5 9c-4 0-5 3-5 4s1 1 1 1zM4.5 8a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5" />
+                                    </svg>
+
+                                    <div class="h4 mb-0 font-weight-bold text-light"><b>@empCheckOut</b></div>
+                                </div>
+                                <div class="text-xs font-weight-bold text-light text-uppercase mb-1 py-2 fontSize11">
+                                    Emp Check-out
+                                </div>
+                            </div>
+                            <div class="">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle position-absolute top-0 mt-2" style="margin-left: 10%" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                                    <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                                </svg>
+                                <ul class="dropdown-menu position-absolute top-100 start-0">
+                                    <li><a class="dropdown-item" href="#">Action</a></li>
+                                    <li><a class="dropdown-item" href="#">Another action</a></li>
+                                    <li><button class="dropdown-item" type="button" @onclick="PendingRequestReport">Pending Request Report</button></li>
+                                </ul>
+
+                            </div>
+
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+            <div class="row">
+
+                <div class="chart-container mt-2" style="position: relative; width: 800px; height: 400px;">
+                    <canvas id="myBarChart" style="width: 100%; height: 100%;"></canvas>
+                </div>
+            </div>
+
+        </div>
+
+
+        <!-- Earnings (Monthly) Card Example -->
+
+    </div>
+
+
+
+</div>
+<hr />
+<!-- /.container-fluid -->
+<!--
+<div class="col-xl-2 col-md-6 mb-sm-5">
+    @*<div class="card border-left-info shadow h-100 py-2">*@
+    <div class="card border-left-primary shadow py-2 h-100" style="
+              background-image: linear-gradient(to left, #B2F2CC, #fafafa);
+              border-radius: 0px!important;
+              box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.4)!important;
+    ">
+        <div class="card-body" style="height: 60vh; ">
+            <div class="row no-gutters align-items-center">
+                <div class="col-sm-12 mr-1">
+                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1 fontSize11">
+                        Guest
+                    </div>
+                    @if (vDetailsToday == null)
+                    {
+                        <span>Data Loading...</span>
+                    }
+                    else if (vDetailsToday.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        int countGuest = 0;
+
+                        foreach (var vd in vDetailsToday)
+                        {
+
+
+
+
+                            if (vd.TypeId == 1)
+                            {
+                                countGuest++;
+                            }
+
+                        }
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">@countGuest</div>
+                    }
+                    <div class="position-absolute top-0 end-0 me-xl-1 mt-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+
+                    </div>
+                </div>
+                <div class="col-sm-12 mr-1 pt-5">
+                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1 fontSize11">
+                        Supplier
+                    </div>
+                    @if (vDetailsToday == null)
+                    {
+                        <span>Data Loading...</span>
+                    }
+                    else if (vDetailsToday.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        int countSupplier = 0;
+
+                        foreach (var vd in vDetailsToday)
+                        {
+
+
+
+
+                            if (vd.TypeId == 2)
+                            {
+                                countSupplier++;
+                            }
+
+                        }
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">@countSupplier</div>
+                    }
+                    <div class="position-absolute top-0 end-0 me-xl-1 mt-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+
+                    </div>
+                </div>
+                <div class="col-sm-12 mr-1 pt-5">
+                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1 fontSize11">
+                        Contractor
+                    </div>
+                    @if (vDetailsToday == null)
+                    {
+                        <span>Data Loading...</span>
+                    }
+                    else if (vDetailsToday.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        int countContractor = 0;
+
+                        foreach (var vd in vDetailsToday)
+                        {
+
+
+                            if (vd.TypeId == 3)
+                            {
+                                countContractor++;
+                            }
+                        }
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">@countContractor</div>
+                    }
+                    <div class="position-absolute top-0 end-0 me-xl-1 mt-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-sm-12 mr-1 pt-5">
+                    <div class="text-xs font-weight-bold text-dark text-uppercase mb-1 fontSize11">
+                        Labour
+                    </div>
+                    @if (vDetailsToday == null)
+                    {
+                        <span>Data Loading...</span>
+                    }
+                    else if (vDetailsToday.Count == 0)
+                    {
+                        <span>No Data Found.</span>
+                    }
+                    else
+                    {
+                        int countLabour = 0;
+
+                        foreach (var vd in vDetailsToday)
+                        {
+
+
+
+
+                            if (vd.TypeId == 4)
+                            {
+                                countLabour++;
+                            }
+
+                        }
+                        <div class="h6 mb-0 font-weight-bold text-gray-800">@countLabour</div>
+                    }
+                    <div class="position-absolute top-0 end-0 me-xl-1 mt-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="grey" class="bi bi-three-dots-vertical dropdown-toggle" role="button" data-bs-toggle="dropdown" aria-expanded="false" viewBox="0 0 16 16">
+                            <path d="M9.5 13a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0m0-5a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0" />
+                        </svg>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="#">Action</a></li>
+                            <li><a class="dropdown-item" href="#">Another action</a></li>
+                            <li><a class="dropdown-item" href="#">Something else here</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+-->
+
+
+
+@code {
+
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await GetCountsForVstType();
+        var counts = new Dictionary<string, int>
+    {
+        { "Guest", 10 },
+        { "Supplier", 8 },
+        { "Contractor", 16 },
+        { "Labour", 2 }
+    };
+
+        if (firstRender)
+        {
+            var labels = vstrTypeCount.Keys.ToArray();
+            var data = vstrTypeCount.Values.ToArray();
+
+            var chartData = new
+            {
+                labels = labels,
+                datasets = new[]
+                {
+                new
+                {
+                    label = "Visitor Type",
+                    data = data,
+                    backgroundColor = new[]
+                    {
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)"
+                    },
+                    borderColor = new[]
+                    {
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(255, 99, 132, 1)",
+                        "rgba(255, 206, 86, 1)",
+                        "rgba(75, 192, 192, 1)",
+                        "rgba(153, 102, 255, 1)"
+                    },
+                    borderWidth = 1
+                }
+            }
+            };
+
+            var options = new
+            {
+                responsive = true,
+                maintainAspectRatio = false,
+                animation = new
+                {
+                    duration = 1000,
+                    easing = "easeOutBounce",
+                    onComplete = "function() { console.log('Animation complete!'); }"
+                },
+                scales = new
+                {
+                    x = new { title = new { display = true, text = "Count" } },
+                    y = new { title = new { display = true, text = "Types" }, beginAtZero = true }
+                },
+                plugins = new
+                {
+                    legend = new { position = "top" },
+                    tooltip = new { enabled = true },
+                    datalabels = new
+                    {
+                        anchor = "end", // Change this to "center"
+                        align = "center", // Change this to "center"
+                        formatter = "function(value) { return value; }",
+                        color = "#000",
+                        font = new
+                        {
+                            weight = "bold",
+                            size = 12
+                        }
+                    }
+                }
+            };
+            var chartJs = $@"
+            var ctx = document.getElementById('myBarChart').getContext('2d');
+            var myBarChart = new Chart(ctx, {{
+                type: 'bar',
+                data: {Newtonsoft.Json.JsonConvert.SerializeObject(chartData)},
+                options: {Newtonsoft.Json.JsonConvert.SerializeObject(options)},
+                plugins: [ChartDataLabels]
+            }});";
+
+            await JS.InvokeVoidAsync("eval", chartJs);
+        }
+    }
+}
+
+@code {
+    bool vstrTable = true;
+    // Dictionary<string, int> vstrTypeCount = new Dictionary<string, int>();
+
+    Dictionary<string, int> vstrTypeCount = new Dictionary<string, int>
+        {
+            { "Guest", 0 },
+            { "Supplier", 0 },
+            { "Contractor", 0 },
+            { "Labour", 0 }
+        };
+    List<VisitorMasterModel>? vData = null;
+    List<VisitingDetailsModel>? vDetailsToday = null;
+    List<VisitingDetailsModel>? vDetailsMonthly = null;
+    List<VisitingDetailsModel>? vDetailsWeekly = null;
+    List<DeptData>? department = null;
+    List<VisitorTransactionModel>? vTransactions = null;
+
+
+    List<NGAC_USERINFO_Model>? empNitgen = null;
+    List<NGAC_AUTHLOG_Model>? empTransactions = null;
+
+    bool downloading = false;
+
+    [CascadingParameter]
+    private Task<AuthenticationState>? authenticationStateTask{ get; set; }
+
+
+    private string? userName;
+
+    private Timer? _timer;
+
+    int countMonthly = 0;
+    int countWeekly = 0;
+    int countCheckin = 0;
+    int countCheckout = 0;
+    int inCompany = 0;
+
+    int empCheckIn = 0;
+    int empCheckOut = 0;
+    int empTotal = 0;
+
+
+    public class VisitorDataAndDetailsModel
+    {
+        public VisitorMasterModel? VisitorData { get; set; }
+        public VisitingDetailsModel? VisitingDetails { get; set; }
+    }
+    List<VisitorDataAndDetailsModel>? combinedData = null;
+    List<VisitorDataAndDetailsModel>? filteredData = null;
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        vData = await VDataService.GetAllVisitorData();
+        vDetailsToday = await VDataService.GetVisitingDetailsOnlyToday();
+        //vDetailsMonthly = await VDataService.GetAllVisitingDetailsMonthlyReport();
+        vDetailsWeekly = await VDataService.GetDateWiseVisitingDetailsWeekly();
+        vTransactions = await VDataService.GetVisitorTransactionsOnlyToday();
+
+
+
+        // empNitgen = await NitgenService.GetEmployeeDataNitgen(); ////////////////////////////////As Discussed with the sir the nitegen function ghas to be comment out
+        // empTransactions = await NitgenService.GetEmployeeLogsNitgen();
+
+        //countMonthly = vDetailsMonthly.Count();
+        countWeekly = vDetailsWeekly.Count();
+        countCheckout = vTransactions.Count(v => v.CheckOut is not null);
+        countCheckin = vTransactions.Count(v => v.CheckIn is not null);
+        inCompany = vTransactions.Count(v => v.CheckIn is not null) - countCheckout;
+        //await GetCountsForVstType();
+
+        //vDetailsToday = vDetailsToday.Where(x => x.VisitDate == DateTime.Now.ToString("yyyy-MM-dd")).ToList();
+        // vData = vData.Where(x => vDetailsToday.Any(y => y.VisitorId == x.VisitorId)).ToList();
+
+
+
+
+        /*
+
+        combinedData = new List<VisitorDataAndDetailsModel>();
+
+            foreach (var visitor in vData)
+            {
+            var visitingDetails = vDetailsToday.FirstOrDefault(vd => vd.VisitorId == visitor.VisitorId);
+                if (visitingDetails != null)
+                {
+                combinedData.Add(new VisitorDataAndDetailsModel
+                        {
+                        VisitorData = visitor,
+                        VisitingDetails = visitingDetails
+        });
+        }
+        }*/
+
+        if( empTransactions != null){
+            foreach (var userGroup in empTransactions.GroupBy(x => x.UserID))
+            {
+                int firstTransactionCount = 0;
+                int lastTransactionCount = 0;
+
+
+                foreach (var dateGroup in userGroup.GroupBy(x => x.TransactionTime.Date))
+                {
+
+                    var firstRecord = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault();
+
+                    var lasrRecordTime = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault().TransactionTime;
+                    var lastRecord = dateGroup.OrderByDescending(e => e.TransactionTime).Where(x => x.TransactionTime != lasrRecordTime).FirstOrDefault();
+
+
+                    var result = new
+                    {
+                        EmployeeName = empNitgen.FirstOrDefault(emp => emp.ID == firstRecord?.UserID)?.Name ?? "Unknown Employee",
+                        TransactionDate = firstRecord?.TransactionTime.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        FirstTransactionTime = firstRecord?.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture),
+                        LastTransactionTime = lastRecord != null ? lastRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture) : "N/A"
+                    };
+
+
+                    //results.Add(result);
+
+
+                    if (firstRecord != null) firstTransactionCount++;
+                    if (lastRecord != null) lastTransactionCount++;
+                }
+
+                // Update the overall counts
+                empCheckIn += firstTransactionCount;
+                //firstTransactionCount++;
+                empCheckOut += lastTransactionCount;
+                //empCheckIn = firstTransactionCount - empCheckOut;
+                empTotal += firstTransactionCount;
+                //empCheckIn -= empCheckOut;
+            }
+        }
+       
+        empCheckIn -= empCheckOut;
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+        (vd, vdd) => new VisitorDataAndDetailsModel
+            {
+                VisitorData = vd,
+                VisitingDetails = vdd
+            }).ToList();
+
+
+        //combinedData = combinedData.Where(x => x.VisitingDetails?.VisitDate == DateTime.Now.ToString("yyyy-MM-dd")).ToList();
+
+        filteredData = combinedData;
+        department = await VDataService.GetDeptData();
+
+        var authenticationState = await authenticationStateTask!;
+        var UserName = authenticationState.User.Identity!.Name;
+        var empData = vmsDbContext?.Employee?.Where(x => x.EmpEmail.ToLower() == UserName).FirstOrDefault();
+        userName = empData?.EmpName;
+
+        _timer = new Timer(async _ => await OnTimerTickAsync(), null, TimeSpan.Zero, TimeSpan.FromSeconds(3));
+
+
+
+
+    }
+
+
+
+    private async Task OnTimerTickAsync()
+    {
+
+        vData = await VDataService.GetAllVisitorData();
+
+        vDetailsToday = await VDataService.GetVisitingDetailsOnlyToday();
+        //vDetailsMonthly = await VDataService.GetAllVisitingDetailsMonthlyReport();
+        vDetailsWeekly = await VDataService.GetDateWiseVisitingDetailsWeekly();
+
+        vTransactions = await VDataService.GetVisitorTransactionsOnlyToday();
+
+
+        // empNitgen = await NitgenService.GetEmployeeDataNitgen(); ////////////////////////////////As Discussed with the sir the nitegen function ghas to be comment out
+        // empTransactions = await NitgenService.GetEmployeeLogsNitgen();
+
+        //countMonthly = vDetailsMonthly.Count();
+        countWeekly = vDetailsWeekly.Count();
+        countCheckout = vTransactions.Count(v => v.CheckOut is not null);
+        countCheckin = vTransactions.Count(v => v.CheckIn is not null);
+        inCompany = vTransactions.Count(v => v.CheckIn is not null) - countCheckout;
+
+        //await GetCountsForVstType();
+
+
+        //vDetailsToday = vDetailsToday.Where(x => x.VisitDate == DateTime.Now.ToString("yyyy-MM-dd")).ToList();
+        //vData = vData.Where(x => vDetailsToday.Any(y => y.VisitorId == x.VisitorId)).ToList();
+
+        /*
+        combinedData = new List<VisitorDataAndDetailsModel>();
+
+            foreach (var visitor in vData)
+            {
+            var visitingDetails = vDetailsToday.FirstOrDefault(vd => vd.VisitorId == visitor.VisitorId);
+                if (visitingDetails != null)
+                {
+                combinedData.Add(new VisitorDataAndDetailsModel
+                        {
+                        VisitorData = visitor,
+                        VisitingDetails = visitingDetails
+        });
+        }
+        }*/
+        empCheckIn = 0;
+        empCheckOut = 0;
+        empTotal = 0;
+        if(empTransactions != null){
+            foreach (var userGroup in empTransactions.GroupBy(x => x.UserID))
+            {
+                int firstTransactionCount = 0;
+                int lastTransactionCount = 0;
+
+
+                foreach (var dateGroup in userGroup.GroupBy(x => x.TransactionTime.Date))
+                {
+
+                    var firstRecord = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault();
+                    var lasrRecordTime = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault().TransactionTime;
+                    var lastRecord = dateGroup.OrderByDescending(e => e.TransactionTime).Where(x => x.TransactionTime != lasrRecordTime).FirstOrDefault();
+
+
+                    var result = new
+                    {
+                        EmployeeName = empNitgen.FirstOrDefault(emp => emp.ID == firstRecord?.UserID)?.Name ?? "Unknown Employee",
+                        TransactionDate = firstRecord?.TransactionTime.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        FirstTransactionTime = firstRecord?.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture),
+                        LastTransactionTime = lastRecord != null ? lastRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture) : "N/A"
+                    };
+
+
+                    //results.Add(result);
+
+
+                    if (firstRecord != null) firstTransactionCount++;
+                    if (lastRecord != null) lastTransactionCount++;
+                }
+
+                // Update the overall counts
+                empCheckIn += firstTransactionCount;
+                //firstTransactionCount++;
+                empCheckOut += lastTransactionCount;
+                //empCheckIn = firstTransactionCount - empCheckOut;
+                empTotal += firstTransactionCount;
+                //empCheckIn -= empCheckOut;
+            }
+        }
+       
+        empCheckIn -= empCheckOut;
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+        (vd, vdd) => new VisitorDataAndDetailsModel
+            {
+                VisitorData = vd,
+                VisitingDetails = vdd
+            }).ToList();
+
+        //combinedData = combinedData.Where(x => x.VisitingDetails?.VisitDate == DateTime.Now.ToString("yyyy-MM-dd")).ToList();
+
+
+        department = await VDataService.GetDeptData();
+
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+    }
+
+
+
+    public async Task CheckinReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        combinedData = combinedData.Where(x => x.VisitingDetails?.VisitDate <= DateOnly.FromDateTime(DateTime.Now) && x.VisitingDetails?.ToDate >= DateOnly.FromDateTime(DateTime.Now) && vTransactions.Any(t => x.VisitingDetails.VisitorId == t.VisitorId && t.CheckIn is not null)).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+
+
+    private async Task GetCountsForVstType()
+    {
+        vDetailsToday = await VDataService.GetVisitingDetailsOnlyToday();
+        if (vDetailsToday != null && vDetailsToday.Count > 0)
+        {
+            // Initialize counts
+            var counts = new Dictionary<string, int>
+            {
+                { "Guest", 0 },
+                { "Supplier", 0 },
+                { "Contractor", 0 },
+                { "Labour", 0 }
+            };
+
+            // Count occurrences
+            foreach (var detail in vDetailsToday)
+            {
+                if (detail.TypeId.HasValue)
+                {
+                    switch (detail.TypeId.Value) // Use .Value to get the int
+                    {
+                        case 1:
+                            counts["Guest"]++;
+                            break;
+                        case 2:
+                            counts["Supplier"]++;
+                            break;
+                        case 3:
+                            counts["Contractor"]++;
+                            break;
+                        case 4:
+                            counts["Labour"]++;
+                            break;
+                        default:
+                            // Optionally log or handle unexpected TypeId values
+                            break;
+                    }
+                }
+            }
+
+            // Update vstrTypeCount
+            foreach (var kvp in counts)
+            {
+                if (vstrTypeCount.ContainsKey(kvp.Key))
+                {
+                    vstrTypeCount[kvp.Key] += kvp.Value;
+                }
+                else
+                {
+                    vstrTypeCount[kvp.Key] = kvp.Value;
+                }
+            }
+        }
+    }
+
+    public async Task CheckoutReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        combinedData = combinedData.Where(x => x.VisitingDetails?.VisitDate <= DateOnly.FromDateTime(DateTime.Now) && x.VisitingDetails?.ToDate >= DateOnly.FromDateTime(DateTime.Now) && vTransactions.Any(t => x.VisitingDetails.VisitorId == t.VisitorId && t.CheckOut is not null)).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+    public async Task InCompanyReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        combinedData = combinedData.Where(x => x.VisitingDetails?.VisitDate == DateOnly.FromDateTime(DateTime.Now) && vTransactions.Any(t => x.VisitingDetails.VisitorId == t.VisitorId && t.CheckIn is not null && t.CheckOut is null)).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+    public async Task MonthlyReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsMonthly, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+    public async Task WeeklyReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsWeekly, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+    public async Task PendingRequestReport()
+    {
+        await LoadData();
+        CalculateCounts();
+
+        combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = vd,
+                    VisitingDetails = vdd
+                }).ToList();
+
+        combinedData = combinedData.Where(x => x.VisitingDetails?.Approval is null).ToList();
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+
+    public async Task TotalEmployeeReport()
+    {
+        await JS.InvokeVoidAsync("hideDiv");
+        await LoadData();
+        CalculateCounts();
+
+        // combinedData = vData.Join(vDetailsToday, vd => vd.VisitorId, vd => vd.VisitorId,
+        //     (vd, vdd) => new VisitorDataAndDetailsModel
+        //         {
+        //             VisitorData = vd,
+        //             VisitingDetails = vdd
+        //         }).ToList();
+
+        // combinedData = combinedData.Where(x => x.VisitingDetails?.Approval is null).ToList();
+
+        vstrTable = false;
+
+        await LoadDepartmentData();
+        UpdateState();
+    }
+
+    private async Task LoadData()
+    {
+        vData = await VDataService.GetAllVisitorData();
+        vDetailsToday = await VDataService.GetVisitingDetailsOnlyToday();
+        //vDetailsMonthly = await VDataService.GetAllVisitingDetailsMonthlyReport();
+        vDetailsWeekly = await VDataService.GetDateWiseVisitingDetailsWeekly();
+        vTransactions = await VDataService.GetVisitorTransactionsOnlyToday();
+
+        // empNitgen = await NitgenService.GetEmployeeDataNitgen();   ////////////////////////////////As Discussed with the sir the nitegen function ghas to be comment out 3/2/2025
+        // empTransactions = await NitgenService.GetEmployeeLogsNitgen();
+    }
+
+    private void CalculateCounts()
+    {
+        //countMonthly = vDetailsMonthly.Count();
+        countWeekly = vDetailsWeekly.Count();
+
+        countCheckout = vTransactions.Count(v => v.CheckOut is not null);
+        countCheckin = vTransactions.Count(v => v.CheckIn is not null);
+        inCompany = vTransactions.Count(v => v.CheckIn is not null) - countCheckout;
+
+        empCheckIn = 0;
+        empCheckOut = 0;
+        empTotal = 0;
+
+        if(empTransactions != null){
+            foreach (var userGroup in empTransactions.GroupBy(x => x.UserID))
+            {
+                int firstTransactionCount = 0;
+                int lastTransactionCount = 0;
+
+
+                foreach (var dateGroup in userGroup.GroupBy(x => x.TransactionTime.Date))
+                {
+
+                    var firstRecord = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault();
+                    var lasrRecordTime = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault().TransactionTime;
+                    var lastRecord = dateGroup.OrderByDescending(e => e.TransactionTime).Where(x => x.TransactionTime != lasrRecordTime).FirstOrDefault();
+
+
+                    var result = new
+                    {
+                        EmployeeName = empNitgen.FirstOrDefault(emp => emp.ID == firstRecord?.UserID)?.Name ?? "Unknown Employee",
+                        TransactionDate = firstRecord?.TransactionTime.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture),
+                        FirstTransactionTime = firstRecord?.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture),
+                        LastTransactionTime = lastRecord != null ? lastRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture) : "N/A"
+                    };
+
+
+                    //results.Add(result);
+
+
+                    if (firstRecord != null) firstTransactionCount++;
+                    if (lastRecord != null) lastTransactionCount++;
+                }
+
+                // Update the overall counts
+                //empCheckIn += firstTransactionCount;
+                firstTransactionCount++;
+                empCheckOut += lastTransactionCount;
+                empCheckIn = firstTransactionCount - empCheckOut;
+                empTotal = firstTransactionCount;
+                //empCheckIn -= empCheckOut;
+            }
+        }
+       
+    }
+
+    private async Task LoadDepartmentData()
+    {
+        department = await VDataService.GetDeptData();
+    }
+
+    private void UpdateState()
+    {
+        _ = InvokeAsync(() =>
+        {
+            StateHasChanged();
+        });
+        _timer?.Dispose();
+    }
+
+
+
+
+    public void Dispose()
+    {
+        _timer?.Dispose();
+    }
+
+
+    private string GetImageFormat(byte[] imageData)
+    {
+        if (imageData[0] == 0x89 && imageData[1] == 0x50 && imageData[2] == 0x4E && imageData[3] == 0x47)
+        {
+            return "png";
+        }
+        else if (imageData[0] == 0xFF && imageData[1] == 0xD8)
+        {
+            return "jpeg";
+        }
+        else
+        {
+            return "jpeg";
+        }
+    }
+
+
+
+
+    protected async Task ExportToExcel()
+    {
+        if (vstrTable == true){
+            downloading = true;
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Employee Attd.");
+
+            // Set header row
+            var headerRow = worksheet.Row(1);
+            headerRow.Cell(1).Value = "Employee Name";
+            headerRow.Cell(2).Value = "Mob";
+            headerRow.Cell(3).Value = "Department";
+            headerRow.Cell(4).Value = "To Visit";
+            headerRow.Cell(5).Value = "Visit Date";
+            headerRow.Cell(6).Value = "To Date";
+            headerRow.Cell(7).Value = "Visit Time";
+            headerRow.Cell(8).Value = "Approval";
+            headerRow.Cell(9).Value = "Checkin";
+            headerRow.Cell(10).Value = "Checkout";
+            /*headerRow.Cell(10).Value = "Photo";*/
+
+            // Add data rows
+            var rowIndex = 2;
+            foreach (var vd in combinedData!)
+            {
+                var row = worksheet.Row(rowIndex);
+                row.Cell(1).Value = $"{vd.VisitorData?.FirstName} {vd.VisitorData?.LastName}";
+                row.Cell(2).Value = vd.VisitorData?.MobileNo;
+
+
+                // Department
+                foreach (var dept in department!)
+                {
+                    if (vd.VisitingDetails?.CompanyDepartment == dept.DeptId)
+                    {
+                        row.Cell(3).Value = dept.DeptName;
+                        break;
+                    }
+                }
+
+                row.Cell(4).Value = vd.VisitingDetails?.ApprovedBy;
+                row.Cell(5).Value = (vd.VisitingDetails?.VisitDate).ToString();
+                row.Cell(6).Value = vd.VisitingDetails?.ToDate.ToString();
+                row.Cell(7).Value = vd.VisitingDetails?.VisitTime;
+
+                // Approval
+                if (vd.VisitingDetails?.Approval == "Approved" || vd.VisitingDetails?.SecurityApproval == "Yes")
+                {
+                    row.Cell(8).Value = "Approved";
+                }
+                else if (vd.VisitingDetails?.Approval == "Cancelled")
+                {
+                    row.Cell(8).Value = "Cancelled";
+                }
+                else
+                {
+                    row.Cell(8).Value = "Pending";
+                }
+
+                // Checkin and Checkout
+                foreach (var vt in vTransactions!)
+                {
+                    if (vd.VisitingDetails?.Id == vt.VDetails_Id)
+                    {
+                        if (vt.CheckIn != "")
+                        {
+                            row.Cell(9).Value = vt.CheckIn;
+                        }
+                        else
+                        {
+                            row.Cell(9).Value = "-";
+                        }
+                        if (vt.CheckOut != "")
+                        {
+                            row.Cell(10).Value = vt.CheckOut;
+                        }
+                        else
+                        {
+                            row.Cell(10).Value = "-";
+                        }
+                        break;
+                    }
+                }
+
+                /*// Photo
+                if (vd.VisitorData?.ImageData != null)
+                    {
+                    var base64String = Convert.ToBase64String(vd.VisitorData.ImageData);
+                    var imageUrl = $"data:image/{GetImageFormat(vd.VisitorData.ImageData)};base64,{base64String}";
+                    // You can't add images to Excel cells using ClosedXML, so we'll skip this column
+                    // row.Cell(10).Value = imageUrl;
+                    row.Cell(10).Value = imageUrl;
+
+                }*/
+
+                rowIndex++;
+            }
+
+
+            await Task.Delay(5000);
+
+            // Save the Excel file to a memory stream
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            // Download the Excel file
+            stream.Position = 0;
+            await JS.InvokeVoidAsync("downloadFile", "report.xlsx", stream.ToArray());
+
+            downloading = false;
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+        }
+        else{
+            downloading = true;
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+            using var workbook = new XLWorkbook();
+            var worksheet = workbook.Worksheets.Add("Employee Transactions");
+
+            // Add headers
+            worksheet.Cell(1, 1).Value = "Employee Name";
+            worksheet.Cell(1, 2).Value = "Date";
+            worksheet.Cell(1, 3).Value = "Check-In";
+            worksheet.Cell(1, 4).Value = "Check-Out";
+
+            int row = 2;
+
+            var groupedTransactions = empTransactions.GroupBy(x => x.UserID);
+
+            foreach (var userGroup in groupedTransactions)
+            {
+                var dateGroups = userGroup.GroupBy(x => x.TransactionTime.Date);
+
+                foreach (var dateGroup in dateGroups)
+                {
+                    var firstRecord = dateGroup.OrderBy(e => e.TransactionTime).FirstOrDefault();
+                    var lastRecord = dateGroup.OrderByDescending(e => e.TransactionTime).FirstOrDefault();
+
+                    if (firstRecord != null)
+                    {
+                        var emp = empNitgen.FirstOrDefault(emp => emp.ID == firstRecord.UserID);
+                        var empName = emp != null ? emp.Name : "Unknown Employee";
+
+                        worksheet.Cell(row, 1).Value = empName;
+                        worksheet.Cell(row, 2).Value = firstRecord.TransactionTime.Date.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+                        worksheet.Cell(row, 3).Value = firstRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+
+                        if (lastRecord != null)
+                        {
+                            worksheet.Cell(row, 4).Value = lastRecord.TransactionTime.TimeOfDay.ToString(@"hh\:mm\:ss", CultureInfo.InvariantCulture);
+                        }
+                        else
+                        {
+                            worksheet.Cell(row, 4).Value = "N/A";
+                        }
+
+                        row++;
+                    }
+                }
+            }
+
+
+            await Task.Delay(5000);
+
+            // Save the Excel file to a memory stream
+            using var stream = new MemoryStream();
+            workbook.SaveAs(stream);
+
+            // Download the Excel file
+            stream.Position = 0;
+            await JS.InvokeVoidAsync("downloadFile", "report.xlsx", stream.ToArray());
+
+            downloading = false;
+            _ = InvokeAsync(() =>
+           {
+               StateHasChanged();
+           });
+        }
+        
+    }
+
+    public async Task totalVstrDataDaily()
+    {
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+    }
+    public async Task DailyReport()
+    {
+        NavigationManager.NavigateTo("registervisitor");
+    }
+}

@@ -1,0 +1,132 @@
+﻿@inherits LayoutComponentBase
+
+
+@using VisitorManagementSystem.Components.Pages
+@using VisitorManagementSystem.Components.Pages.Shared
+@using VisitorManagementSystem.Data
+@inject IVDataService VDataService
+@inject VMSDbContext vmsDbContext
+
+
+<div class="page">
+
+    
+    <main>
+        
+        <div class="top-row">
+
+            <div class="d-flex">
+                <img src="RehlkoLogo/rehlko_logo_horiz_new_energy_blue_rgb.png" width="8%"  role="button" />
+
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <h6 class="start-aligned" style="margin-top:auto; margin-bottom:auto">Please Login!</h6>
+                    </NotAuthorized>
+                    <Authorized>
+                        <h6 class="start-aligned" style="margin-top:auto; margin-bottom:auto">Welcome! <b><!--@context.User.Identity.Name--> @userName</b></h6>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+            
+            
+             <AuthorizeView>
+                <Authorized>@*
+                    <form class="d-flex">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>*@
+                </Authorized>
+            </AuthorizeView>
+
+
+            <a style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;" class="fs-6 mx-4">
+                <DigitalClock />
+            </a>
+            <a href="/">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-house-door-fill" viewBox="0 0 16 16">
+                    <path d="M6.5 14.5v-3.505c0-.245.25-.495.5-.495h2c.25 0 .5.25.5.5v3.5a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5v-7a.5.5 0 0 0-.146-.354L13 5.793V2.5a.5.5 0 0 0-.5-.5h-1a.5.5 0 0 0-.5.5v1.293L8.354 1.146a.5.5 0 0 0-.708 0l-6 6A.5.5 0 0 0 1.5 7.5v7a.5.5 0 0 0 .5.5h4a.5.5 0 0 0 .5-.5" />
+                </svg>
+            </a>
+           
+            
+           @*  <a href="https://kohlerenergy.com/" target="_blank" >Help</a> *@
+            <UserManual />
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="/login">Login</a>
+
+                </NotAuthorized>
+                <Authorized>
+                    <a href="/logout">Logout</a>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+
+        <AuthorizeView>
+            
+            <Authorized>
+                <div class="bottom-row border-top">
+                    <div class="container bottom-0" style="margin: 0!important">
+                        <footer class="d-flex flex-wrap justify-content-between align-items-center py-0 my-0  col-12">
+                            <a href="/" class="col-md-2 col-sm-4 col-6 d-flex align-items-center justify-content-center mb-0 mb-md-0 me-md-auto link-body-emphasis text-decoration-none mx-0">
+                                <svg class="bi me-2 m-0" width="40" height="32"><img src="/RehlkoLogo/rehlko_logo_horiz_new_energy_blue_RGB.png" width="120px" /></svg>
+                            </a>
+                            <p class="col-md-3 col-sm-4 col-6 mb-0 text-body-secondary">&copy; 2024 Company, Inc</p>
+
+                            <ul class="nav col-md-7 col-sm-12 justify-content-end">
+                                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Home</a></li>
+                                <li class="nav-item"><a href="dashboard" class="nav-link px-2 text-body-secondary">Dashboard</a></li>
+                                <li class="nav-item"><a href="visitorRequest" class="nav-link px-2 text-body-secondary">Approvals</a></li>
+
+                                <li class="nav-item"><a href="https://kohlerenergy.com/rehlko" class="nav-link px-2 text-body-secondary" target="_blank">About</a></li>
+                            </ul>
+                        </footer>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        
+
+
+       
+        
+    </main>
+
+   
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+
+@code{
+    
+    
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+
+    private string? userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        var authenticationState = await authenticationStateTask;
+        var empData = vmsDbContext.Employee.Where(x => x.EmpEmail.ToLower() == authenticationState.User.Identity.Name).FirstOrDefault();
+        if(empData is not null)
+        {
+            userName = empData!.EmpName;
+        }
+        
+    }
+}

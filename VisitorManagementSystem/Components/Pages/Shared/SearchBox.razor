@@ -1,0 +1,24 @@
+﻿@typeparam TEntity
+
+
+
+<div class="d-flex">
+    <input @bind="searchVisitor" @bind:event="oninput" class="form-control me-2" type="search" placeholder="Search" aria-label="Search..." />
+    <button @onclick="OnSearchClicked"  class="btn btn-outline-success">Search</button>
+</div>
+
+
+
+@code {
+    [Parameter]
+    public List<TEntity> Visitors { get; set; }
+
+    [Parameter]
+    public EventCallback<string> OnSearch { get; set; }
+
+    private string searchVisitor;
+
+    private async Task OnSearchClicked(){
+        await OnSearch.InvokeAsync(searchVisitor);
+    }
+}

@@ -1,0 +1,963 @@
+﻿@page "/checkin"
+
+@inject IVDataService VDataService
+@* @rendermode @(new InteractiveServerRenderMode(prerender: false))  *@
+@rendermode InteractiveServer
+
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin, Security")]
+
+@using Microsoft.AspNetCore
+@using System.Drawing;
+@using QRCoder;
+@using System.Drawing.Imaging;
+@using System.Globalization
+@using System.Text.RegularExpressions
+@using VisitorManagementSystem.Components.Pages.Shared
+@using Microsoft.AspNetCore.Components
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+
+<style>
+    .list-group-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .float-right {
+        margin-left: auto;
+    }
+
+    .float-left {
+        margin-right: auto;
+    }
+
+
+    .loader {
+        position: relative;
+        width: 250px;
+        height: 250px;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+        animation: animate 1.2s linear infinite;
+    }
+
+    @@keyframes animate {
+        0% {
+            transform: rotate(0deg);
+        }
+
+        100% {
+            transform: rotate(360deg);
+        }
+    }
+
+    .loader span {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+        border-radius: 50%;
+        background: linear-gradient(#f07e6e, #84cdfa, #5ad1cd);
+    }
+
+    .loader-container {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin-left: 7%;
+        z-index: 2000; /* make sure it's on top of other elements */
+    }
+
+    .loader span:nth-child(1) {
+        filter: blur(5px);
+    }
+
+    .loader span:nth-child(2) {
+        filter: blur(10px);
+    }
+
+    .loader span:nth-child(3) {
+        filter: blur(25px);
+    }
+
+    .loader span:nth-child(4) {
+        filter: blur(50px);
+    }
+
+    .loader:after {
+        content: '';
+        position: absolute;
+        top: 10px;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        background: #f1f1f1;
+        border: solid white 10px;
+        border-radius: 50%;
+    }
+
+
+    .overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* adjust the opacity to your liking */
+        z-index: 1000; /* make sure it's on top of everything else */
+    }
+
+
+
+    .downloadText {
+        position: relative;
+        font-family: sans-serif;
+        font-size: 15px;
+        text-transform: uppercase;
+        letter-spacing: 2px;
+        overflow: hidden;
+        background: linear-gradient(90deg, #000, #fff, #000);
+        background-repeat: no-repeat;
+        background-size: 80%;
+        animation: animateP 3s linear infinite;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: rgba(255, 255, 255, 0);
+    }
+
+    @@keyframes animateP {
+        0% {
+            background-position: -500%;
+        }
+
+        100% {
+            background-position: 500%;
+        }
+    }
+</style>
+<PageTitle>Check-In</PageTitle>
+
+
+
+<style>
+    .A6 {
+        width: 10cm; /* A6 paper size is 148x105mm */
+        height: 14cm;
+        max-width: 10cm;
+        max-height: 14cm;
+        border: 1px solid black;
+        padding: 5px;
+        box-sizing: border-box;
+        overflow: hidden;
+        align-items: center;
+        justify-content: center;
+
+
+    }
+    .divBody{
+        display: flex;
+        align-items: center;
+    }
+
+    .input-container {
+        position: relative;
+    }
+
+    .search-input {
+        padding: 0.5rem 0.5rem 0.5rem 3rem;
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+    }
+
+    .close-icon {
+        position: absolute;
+        top: 50%;
+        right: 0.75rem;
+        transform: translateY(-50%);
+        fill: #999;
+        width: 1.5rem;
+        height: 1.5rem;
+    }
+    .margindef{
+        margin: 0;
+        padding: 0;
+    }
+
+    .searchInput {
+        border: 1px solid #333;
+        background-color: #f7f7f7;
+        box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+        border-radius: 20px;
+    }
+
+.scanInput {
+     border: 1px solid #333;
+  box-shadow: 0 0 5px rgba(0, 0, 0, 0.1);
+  border-radius: 20px;
+  background-image: linear-gradient(to right, #ccc, #fff);
+  background-size: 200% 100%;
+  background-position: 50% 100%;
+  animation: scanning 3s infinite ease-in-out;
+}
+
+@@keyframes scanning {
+  0% {
+    background-position: 0% 100%;
+  }
+  50% {
+    background-position: 100% 100%;
+  }
+  100% {
+    background-position: 0% 100%;
+  }
+}
+
+</style>
+
+<style>
+    .video-container {
+        display: inline-block; /* To wrap the video */
+        border: 5px solid #ccc; /* Base border color */
+        border-radius: 10px; /* Rounded corners */
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3), inset 0 1px 3px rgba(255, 255, 255, 0.5); /* 3D effect */
+        overflow: hidden; /* To ensure the video doesn't overflow the border */
+    }
+
+    .video-size {
+        width: 100%; /* Responsive width */
+        height: auto; /* Maintain aspect ratio */
+    }
+</style>
+
+@*<script>
+    function printDiv(divId) {
+        var div = document.getElementById(divId);
+        var wnd = window.open();
+        wnd.document.write(div.outerHTML);
+        wnd.print();
+        wnd.close();
+    }
+
+
+</script>*@
+
+<script>
+    @*$(document).ready(function () {
+        $(".toast").toast('show');
+        });*@
+
+        function startToastMsg() {
+            $(".toast").toast('show');
+        }
+    window.scrollToTop = function () {
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    }
+
+    function playSound(fileName) {
+        var audio = new Audio(`/Audio/${fileName}.mp3`);
+        audio.play();
+    }
+
+        function clearInput(inputElement) {
+        inputElement.value = '';
+    }
+</script>
+
+
+
+@if (processing == true)
+{
+    <div class="overlay" />
+    <div class="loader-container">
+        <div class="loader">
+
+            <span></span>
+            <span></span>
+            <span></span>
+            <span></span>
+        </div>
+    </div>
+    <div class="loader-container">
+        <p class="downloadText">Processing...</p>
+    </div>
+}
+
+<div class="d-flex justify-content-between">
+
+
+    <div class="d-flex input-container">
+        @if(manualInOut == true){
+            <input @ref="visitorIdInput" @bind="visitorID" class="form-control me-2 scanInput" type="search" placeholder="Enter MOB Or Visitor ID" aria-label="Enter MOB Or Visitor ID" />
+
+            <button type="button" class="btn btn-success" @onclick="InsertCheckIn">Check</button>
+
+        }
+        else{
+            <div class="d-flex input-container">
+                <input @ref="visitorIdInput" @onchange="UpdateVisitorID" class="form-control me-2 scanInput" type="search" placeholder="Enter Visitor ID" aria-label="Enter Visitor ID..." />
+
+                <button type="button" class="btn btn-info" @onclick="ManualCheckIn">Manual</button>
+            </div>
+
+        }
+
+    </div>
+
+
+    <div>
+        <h4 class="h3 mb-0 text-gray-800" style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif">Check-in/Check-out</h4>
+    </div>
+    <div class="d-flex input-container">
+        <input @bind="searchVisitor" @bind:event="oninput" class="form-control me-2 searchInput" type="search" placeholder="Search" aria-label="Search..." />
+
+
+    </div>
+
+    @*<SearchBox Visitors="vData" OnSearch="UpdateFilteredVisitors"></SearchBox>*@
+
+</div>
+
+
+
+<br />
+<hr />
+
+
+@* <label>@qrCodeData</label> *@
+
+<div class="row">
+
+
+
+    <div class="table-responsive col-xl-8 col-md-8 mb-sm-5">
+        <div class="col-sm-12 mr-1">
+            @if (filteredvisitors == null && vDetails == null)
+            {
+                <span>Loading...</span>
+            }
+            else if (filteredvisitors!.Count == 0 && vDetails == null)
+            {
+                <span>No Data Found.</span>
+            }
+            else
+            {
+
+                <table class="table table-striped table-bordered border-secondary-subtle shadow mb-sm-5  align-middle table-condensed">
+                    <!--mb-md-0-->
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Visitor Name</th>
+
+                            <th>Dept</th>
+
+                            <th>Visit Date</th>
+                            <th>Dur</th>
+                            <th>To Date</th>
+                            <th>Visit Time</th>
+
+                            <th align="center">Checkin</th>
+                            <th align="center">Checkout</th>
+
+                        </tr>
+                    </thead>
+                    <tbody class="table-group-divider">
+                        @foreach (var vd in filteredvisitor.OrderByDescending(x => x.VisitorTransactions.CheckIn))
+                        {
+
+                            <tr>
+                                <td>@vd.VisitorData.FirstName @vd.VisitorData.LastName</td>
+
+                                <td>@dData.Where(x => x.DeptId == (vd.VisitingDetails.CompanyDepartment)).Select(x => x.DeptName).FirstOrDefault()</td>
+
+                                <td>@vd.VisitingDetails.VisitDate</td>
+                                <td>@vd.VisitingDetails.Duration</td>
+                                <td>@vd.VisitingDetails.ToDate</td>
+                                <td>@vd.VisitingDetails.VisitTime</td>
+                                <td>@vd.VisitorTransactions.CheckIn</td>
+                                <td>@vd.VisitorTransactions.CheckOut</td>
+
+                                @* update<td align="center">
+
+                            @if (vd.Approval is null)
+                            {
+                            <h6 class="font-size-sm"><b><i>Not Approved</i></b></h6>
+                            }
+                            else if(vd.Checkin is null)
+                            {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="green" class="bi bi-box-arrow-in-left" viewBox="0 0 16 16" role="button" @onclick="()=>UpdCheckin(vd.Id)">
+                            <path fill-rule="evenodd" d="M10 3.5a.5.5 0 0 0-.5-.5h-8a.5.5 0 0 0-.5.5v9a.5.5 0 0 0 .5.5h8a.5.5 0 0 0 .5-.5v-2a.5.5 0 0 1 1 0v2A1.5 1.5 0 0 1 9.5 14h-8A1.5 1.5 0 0 1 0 12.5v-9A1.5 1.5 0 0 1 1.5 2h8A1.5 1.5 0 0 1 11 3.5v2a.5.5 0 0 1-1 0z" />
+                            <path fill-rule="evenodd" d="M4.146 8.354a.5.5 0 0 1 0-.708l3-3a.5.5 0 1 1 .708.708L5.707 7.5H14.5a.5.5 0 0 1 0 1H5.707l2.147 2.146a.5.5 0 0 1-.708.708z" />
+                            </svg>
+
+                            }
+                            else
+                            {
+                            <h6>@vd.Checkin</h6>
+                            }
+
+                            </td>*@
+
+
+                                @* update <td align="center">
+
+                            @if (vd.Checkin is null)
+                            {
+                            <h6><b><i>Checkin Pending</i></b></h6>
+                            }
+                            else if(vd.Checkout is null)
+                            {
+                            <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" fill="red" class="bi bi-box-arrow-right" viewBox="0 0 16 16" role="button" @onclick="()=>UpdCheckout(vd.Id, vd.Checkin)">
+                            <path fill-rule="evenodd" d="M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z" />
+                            <path fill-rule="evenodd" d="M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z" />
+                            </svg>
+                            }
+                            else
+                            {
+                            <h6>@vd.Checkout</h6>
+                            }
+
+                        </td>*@
+
+                                @*
+                        @if (vd.ImageData != null)
+                        {
+                        var base64String = Convert.ToBase64String(vd.ImageData);
+                        var imageUrl = $"data:image/{GetImageFormat(vd.ImageData)};base64,{base64String}";
+                        <td><img src="@imageUrl" width="45" height="50" alt="Visitor" class="rounded mx-auto d-block" /></td>
+                        }*@
+                            </tr>
+
+
+
+                        }
+                    </tbody>
+                </table>
+
+            }
+        </div>
+    </div>
+    <div class="col-xl-4 col-md-4">
+        <NavigationLock ConfirmExternalNavigation="false" OnBeforeInternalNavigation="@OnBeforeInternalNavigation"></NavigationLock>
+        <div class="video-container">
+            <video id="qrScanner" autoplay class="video-size"></video>
+        </div>
+    </div>
+
+</div>
+
+
+
+<div class="toast-container top-0 end-0 p-3">
+    <div class="toast" role="alert" aria-live="assertive" aria-atomic="true" data-bs-delay="10000">
+        <div class="toast-header">
+            <img src="https://cdn3.iconfinder.com/data/icons/picons-weather/57/53_warning-512.png" height="15px" width="15px" class="rounded me-2" alt="...">
+            <strong class="me-auto">Here's a message!</strong>
+            <small>@DateTime.Now.ToShortTimeString()</small>
+            <button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+        <div class="toast-body">
+            @toastMsg
+        </div>
+    </div>
+</div>
+
+@code {
+    public string? toastMsg = string.Empty;
+
+    List<VisitorMasterModel>? vData = null;
+    List<DeptData>? dData = null;
+
+    bool manualInOut = false;
+    bool processing = false;
+
+    List<VisitingDetailsModel>? vDetails = null;
+    List<VisitorTransactionModel>? vTransactions = null;
+
+    public class VisitorDataAndDetailsModel
+    {
+        public VisitorMasterModel VisitorData { get; set; }
+        public VisitingDetailsModel VisitingDetails { get; set; }
+        public VisitorTransactionModel VisitorTransactions { get; set; }
+    }
+    List<VisitorDataAndDetailsModel>? combinedData = null;
+
+
+    List<VisitorDataAndDetailsModel>? filteredvisitors = null;
+
+
+    private ElementReference visitorIdInput;
+
+
+    private string qrCodeData = string.Empty;
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            await visitorIdInput.FocusAsync();
+            await JS.InvokeVoidAsync("qrScanHelper.startScan", DotNetObjectReference.Create(this));
+        }
+    }
+    [JSInvokable]
+    public async Task OnQrCodeScanned(string qrCodeData1)
+    {
+        qrCodeData = qrCodeData1;
+        visitorID = qrCodeData1;
+        await InsertCheckIn();
+
+        _ = InvokeAsync(() =>
+                  {
+                      StateHasChanged();
+                  });
+
+    }
+
+    private async Task OnBeforeInternalNavigation(LocationChangingContext context){
+        await JS.InvokeVoidAsync("qrScanHelper.stopScan", DotNetObjectReference.Create(this));
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        dData = await VDataService.GetDeptData();
+
+        /*vDetails = await VDataService.GetAllVisitingDetails();
+
+        combinedData = vData.Join(vDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+       (vd, vdd) => new VisitorDataAndDetailsModel
+               {
+               VisitorData = vd,
+               VisitingDetails = vdd
+           }).ToList();*/
+
+
+
+
+        vData = await VDataService.GetAllVisitorData();
+        vDetails = await VDataService.GetAllVisitingDetails();
+        vTransactions = await VDataService.GetAllVisitorTransactions();
+
+        var currentDate = DateOnly.FromDateTime(DateTime.Now);
+
+        combinedData = vData
+        .Join(vDetails, vd => vd.VisitorId, vd => vd.VisitorId,
+            (vd, vdd) => new { VisitorData = vd, VisitingDetails = vdd })
+        .Join(vTransactions, anon => anon.VisitorData.VisitorId, vt => vt.VisitorId,
+            (anon, vt) => new VisitorDataAndDetailsModel
+                {
+                    VisitorData = anon.VisitorData,
+                    VisitingDetails = anon.VisitingDetails,
+                    VisitorTransactions = vt
+                }).Where(d => d.VisitingDetails.Id == d.VisitorTransactions.VDetails_Id)
+        .ToList();
+
+
+        combinedData = combinedData.Where(x => (x.VisitingDetails.Approval == "Approved" || x.VisitingDetails.SecurityApproval == "Yes") && x.VisitorTransactions.Date == currentDate).ToList();
+
+
+        //vDetails = vDetails.Where(x => vData.Select(y => y.VisitorId).Contains(x.VisitorId)).ToList();
+
+        /* vDetails = from detail in vDetails
+                     join data in vData on detail.VisitorId equals data.VisitorId
+                     select detail;*/
+
+        filteredvisitors = combinedData.ToList();
+        //vDetails = vDetails.Where(x => filteredvisitors.Select(y => y.VisitorId).Contains(x.VisitorId)).ToList();
+    }
+
+    void UpdateFilteredVisitors(string searchVstr)
+    {
+        if (string.IsNullOrEmpty(searchVstr))
+        {
+            filteredvisitors = combinedData?.ToList();
+        }
+        else
+        {
+            filteredvisitors = combinedData?.Where(
+                v => v.VisitorData.FirstName.Contains(searchVstr, StringComparison.OrdinalIgnoreCase)
+
+
+            )
+            .ToList();
+        }
+    }
+
+    private string searchVisitor = string.Empty;
+
+    private List<VisitorDataAndDetailsModel> filteredvisitor => combinedData!.Where(
+                v => v.VisitorData.FirstName.Contains(searchVisitor, StringComparison.OrdinalIgnoreCase) || v.VisitorData.LastName.Contains(searchVisitor, StringComparison.OrdinalIgnoreCase)).ToList();
+
+
+
+
+
+    void UpdateVisitorID(ChangeEventArgs e)
+    {
+        visitorID = (e.Value as string)?.Trim();
+        if(visitorID != "" && visitorID != null)
+        {
+            InsertCheckIn();
+        }
+
+    }
+    private string visitorID = string.Empty;
+
+    private async Task ManualCheckIn(){
+        manualInOut = true;
+    }
+    private async Task InsertCheckIn()
+    {
+        processing = true;
+        _ = InvokeAsync(() =>
+             {
+                 StateHasChanged();
+             });
+        try
+        {
+            DateTime visitDate1;
+            DateTime currentDate;
+            DateTime durationDate;
+
+            //private 
+
+            await Task.Delay(500);
+            var todayDate = DateOnly.FromDateTime(DateTime.Now);
+
+
+            //var singlevDetails = vDetails!.FirstOrDefault(v => v.VisitorId == visitorID && v.SafetyStatus is not null);//&& v.VisitDate == todayDate);
+            VisitingDetailsModel? singlevDetails = null;
+            if (manualInOut == true){
+                visitorID = NormalizeVisitorID(visitorID);
+                if (IsValidVisitorID(visitorID))
+                {
+                    // // Get the VisitorId based on the MobileNo
+                    // var getvIDByMod = vData?.FirstOrDefault(v => v.MobileNo == visitorID)?.VisitorId;
+
+                    // // Check if getvIDByMod is not null before proceeding
+                    // if (getvIDByMod != null)
+                    // {
+                    //     // Fetch single visitor details based on the VisitorId
+                    //     singlevDetails = vDetails?.FirstOrDefault(v =>
+                    //         v.VisitorId == getvIDByMod &&
+                    //         v.SafetyStatus != null && 
+                    //         v.ToDate >= todayDate);
+                    // }
+                    // else
+                    // {
+                    //     // Handle the case where getvIDByMod is null
+                    //     singlevDetails = null; // or any other default value or action
+                    // }
+
+
+                    // Get the VisitorId based on the MobileNo
+                    var getvIDByMod = vData?.Where(v => v.MobileNo == visitorID).ToList();
+
+                    if (getvIDByMod != null)
+                    {
+                        foreach (var dd in getvIDByMod)
+                        {
+                            // Check if getvIDByMod is not null before proceeding
+                            if (getvIDByMod != null)
+                            {
+                                // Fetch single visitor details based on the VisitorId
+                                // singlevDetails = vDetails?.FirstOrDefault(v =>
+                                //     v.VisitorId == dd.VisitorId &&
+                                //     v.SafetyStatus != null &&
+                                //     v.ToDate >= todayDate);
+
+                                singlevDetails = vDetails?
+                                .Where(v => v.VisitorId == dd.VisitorId &&
+                                         v.SafetyStatus != null &&
+                                         v.ToDate >= todayDate)
+                                .OrderByDescending(v => v.VisitTime) 
+                                .FirstOrDefault(); //////////////////////////////////Update for multiple appointemnets today
+
+                                if (singlevDetails != null)
+                                {
+                                    break;
+                                }
+                            }
+                            else
+                            {
+                                // Handle the case where getvIDByMod is null
+                                singlevDetails = null; // or any other default value or action
+                            }
+                        }
+                    }
+
+
+                }
+                else
+                {
+                    // singlevDetails = vDetails!.FirstOrDefault(v =>
+                    //    v.VisitorId == visitorID &&
+                    //    v.SafetyStatus != null &&
+                    //    v.ToDate >= todayDate);
+
+                    singlevDetails = vDetails?
+                             .Where(v => v.VisitorId == visitorID &&
+                                      v.SafetyStatus != null &&
+                                      v.ToDate >= todayDate)
+                             .OrderByDescending(v => v.VisitTime)
+                             .FirstOrDefault(); //////////////////////////////////Update for multiple appointemnets today
+                }
+            }
+            else{
+                // singlevDetails = vDetails!.FirstOrDefault(v =>
+                //       v.VisitorId == visitorID &&
+                //       v.SafetyStatus != null &&
+                //       v.ToDate >= todayDate);
+
+                singlevDetails = vDetails?
+                      .Where(v => v.VisitorId == visitorID &&
+                               v.SafetyStatus != null &&
+                               v.ToDate >= todayDate)
+                      .OrderByDescending(v => v.VisitTime)
+                      .FirstOrDefault(); //////////////////////////////////Update for multiple appointemnets today
+            }
+
+
+
+            if(singlevDetails != null)
+            {
+                //visitDate = DateTime.ParseExact(singlevDetails.VisitDate, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+
+                //durationDate = visitDate.AddDays(int.Parse(singlevDetails.Duration));
+                //string? toDate = singlevDetails.ToDate;
+                //var vDate = DateTime.Parse(singlevDetails.ToDate).Date;
+                //durationDate = DateTime.ParseExact(toDate!, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+
+               
+                //var singleDataCheckIn = vTransactions?.FirstOrDefault(v => v.VisitorId == singlevDetails.VisitorId && v.Date == todayDate);
+
+                if (todayDate >= singlevDetails.VisitDate && singlevDetails.VisitDate <= singlevDetails.ToDate)
+                {                
+                    // var visitorTransactions = await VDataService.GetVisitorTransactionsLog(singlevDetails.VisitorId, todayDate);
+                    List<VisitorTransactionModel> visitorTransactions; 
+
+                    var latestDetail = vDetails?
+                        .Where(v => v.VisitorId == singlevDetails.VisitorId && v.ToDate >= todayDate)
+                        .OrderByDescending(v => v.VisitTime)
+                        .FirstOrDefault();
+
+                   
+                    if (latestDetail != null)
+                    {
+                       
+                        visitorTransactions = await VDataService.GetVisitorTransactionsLogID(latestDetail.Id, singlevDetails.VisitorId, todayDate);
+                    }
+                    else//////////////////////Update for multiple appointemnets today
+                    {
+                       
+                        visitorTransactions = new List<VisitorTransactionModel>(); 
+                      
+                    }
+
+                   
+
+                    if (visitorTransactions.Count == 0)
+                    {
+                        // No transactions today, so we can create a new check-in
+                        //await VDataService.InsertVisitorTransactions(singlevDetails.VisitorId, todayDate, singlevDetails.Id);
+                        await VDataService.InsertVisitorTransactions(singlevDetails.VisitorId, todayDate, singlevDetails.Id); //////////////////////Update for multiple appointemnets today
+                        processing = false;
+                        _ = InvokeAsync(() =>
+                          {
+                          StateHasChanged();
+                          });
+                        toastMsg = "Check-in";
+                        await JS.InvokeVoidAsync("playSound", "checkin");
+                        await Task.Delay(1500);
+                        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+                    }
+                    else
+                    {
+                        // There are transactions today, check the last transaction
+                        var lastTransaction = visitorTransactions.Last();
+
+                        if (lastTransaction.CheckOut is null)
+                        {
+                            // Last transaction is a check-in, check if it's time to check out
+                            if (int.Parse(lastTransaction.CheckIn.Substring(0, 2) + lastTransaction.CheckIn.Substring(3, 2)) + 2 <= int.Parse(DateTime.Now.TimeOfDay.ToString("hhmm")))
+                            {
+                                // It's time to check out
+                                await VDataService.UpdateVisitorTransactionCheckout(lastTransaction.Id);
+                                processing = false;
+                                _ = InvokeAsync(() =>
+                                  {
+                                      StateHasChanged();
+                                  });
+                                toastMsg = "Check-out";
+                                await JS.InvokeVoidAsync("playSound", "checkout");
+                                await Task.Delay(1500);
+                                NavigationManager.NavigateTo(NavigationManager.Uri, true);
+                            }
+                            else
+                            {
+                                // Not enough time has passed since check-in
+                                processing = false;
+                                _ = InvokeAsync(() =>
+                                  {
+                                      StateHasChanged();
+                                  });
+
+                                toastMsg = "Wait! a Minute";
+                                visitorID = string.Empty;
+                                await JS.InvokeVoidAsync("clearInput", visitorIdInput);
+                                _ = InvokeAsync(() =>
+                                {
+                                    StateHasChanged();
+                                });
+                                await JS.InvokeVoidAsync("scrollToTop");
+                                await JS.InvokeVoidAsync("playSound", "wait");
+                                await JS.InvokeVoidAsync("startToastMsg");
+
+
+                            }
+                        }
+                        else
+                        {
+                            if (int.Parse(lastTransaction.CheckOut.Substring(0, 2) + lastTransaction.CheckOut.Substring(3, 2)) + 2 <= int.Parse(DateTime.Now.TimeOfDay.ToString("hhmm")))
+                            { 
+                                // Last transaction is a check-out, we can create a new check-in
+                                await VDataService.InsertVisitorTransactions(singlevDetails.VisitorId, todayDate, singlevDetails.Id);
+                                processing = false;
+                                _ = InvokeAsync(() =>
+                                  {
+                                      StateHasChanged();
+                                  });
+                                toastMsg = "Check-in";
+                                await JS.InvokeVoidAsync("playSound", "checkin");
+                                await Task.Delay(1500);
+                                NavigationManager.NavigateTo(NavigationManager.Uri, true);
+                            }
+                            else
+                            {
+                                // Not enough time has passed since check-in
+                                toastMsg = "Wait! a Minute";
+                                processing = false;
+                                _ = InvokeAsync(() =>
+                                  {
+                                      StateHasChanged();
+                                  });
+                                visitorID = string.Empty;
+                                await JS.InvokeVoidAsync("clearInput", visitorIdInput);
+                                _ = InvokeAsync(() =>
+                                {
+                                    StateHasChanged();
+                                });
+                                await JS.InvokeVoidAsync("scrollToTop");
+                                await JS.InvokeVoidAsync("playSound", "wait");
+                                await JS.InvokeVoidAsync("startToastMsg");
+
+
+                            }
+                            
+                        }
+                    }
+
+                }
+                else
+                {
+                    processing = false;
+                   
+                    toastMsg = "Entry Denied";
+                    visitorID = string.Empty;
+                    await JS.InvokeVoidAsync("clearInput", visitorIdInput);
+                    _ = InvokeAsync(() =>
+                    {
+                        StateHasChanged();
+                    });
+                    await JS.InvokeVoidAsync("startToastMsg");
+                    await JS.InvokeVoidAsync("playSound", "entryden");
+                    Console.WriteLine("Entry Denied");
+                }
+            }
+            else
+            {
+                processing = false;
+                _ = InvokeAsync(() =>
+                  {
+                      StateHasChanged();
+                  });
+                toastMsg = "Visitor Not Found for todays Schedule Or Not Approved";
+                visitorID = string.Empty;
+                await JS.InvokeVoidAsync("clearInput", visitorIdInput);
+               
+                await JS.InvokeVoidAsync("startToastMsg");
+                await JS.InvokeVoidAsync("playSound", "notfoundapprove");
+                
+                Console.WriteLine("Visitor Not Found for todays Schedule Or Not Approved");
+            }
+            _ = InvokeAsync(() =>
+              {
+                  StateHasChanged();
+              });
+
+
+        }
+        catch(Exception e)
+        {
+            Console.WriteLine(e);
+        }
+
+    }
+    private static string NormalizeVisitorID(string visitorID)
+    {
+        // If visitorID is 11 digits and starts with '0', remove the first digit
+        if (visitorID.Length == 11 && visitorID.StartsWith("0"))
+        {
+            visitorID = visitorID.Substring(1);
+        }
+        return visitorID;
+    }
+
+    private static bool IsValidVisitorID(string visitorID)
+    {
+        // Check if visitorID is exactly 10 digits and contains only digits
+        return visitorID.Length == 10 && Regex.IsMatch(visitorID, @"^\d{10}$");
+    }
+
+
+    private async Task UpdCheckin(int id)
+    {
+
+        await VDataService.UpdateVisitorCheckin(id);
+        NavigationManager.NavigateTo(NavigationManager.Uri, true);
+    }
+    private async Task UpdCheckout(int id, string checkin)
+    {
+
+        if (int.Parse(checkin.Substring(0, 2) + checkin.Substring(3, 2))+3 <= int.Parse(DateTime.Now.TimeOfDay.ToString("hhmm")))
+        {
+            //await VDataService.UpdateVisitorCheckout(id);
+            Console.WriteLine($"{int.Parse(checkin.Substring(0, 2) + checkin.Substring(3, 2))+3} <= {int.Parse(DateTime.Now.TimeOfDay.ToString("hhmm"))}");
+            NavigationManager.NavigateTo(NavigationManager.Uri, true);
+        }
+        else
+        {
+            await JS.InvokeVoidAsync("scrollToTop");
+            await JS.InvokeVoidAsync("startToastMsg");
+            await JS.InvokeVoidAsync("playSound", "wait");
+            
+            Console.WriteLine($"{int.Parse(checkin.Substring(0, 2) + checkin.Substring(3, 2)) + 3} <= {int.Parse(DateTime.Now.TimeOfDay.ToString("hhmm"))}");
+            Console.WriteLine("Wait for a minute");
+        }
+
+
+        
+    }
+}
+
+
+
+

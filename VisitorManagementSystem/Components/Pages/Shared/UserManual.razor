@@ -1,0 +1,19 @@
+﻿@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<script>
+    function openPdf(pdfUrl) {
+        window.open(pdfUrl, '_blank');
+    }
+
+</script>
+
+<a style="color: #0086b3; text-decoration: none; cursor: pointer;" @onclick="showUserManual">Help</a>
+
+@code {
+    
+    async Task showUserManual()
+    {
+        await JS.InvokeVoidAsync("openPdf", "UserManual_VMS_2.pdf");
+    }
+}

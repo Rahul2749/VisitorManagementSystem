@@ -1,0 +1,54 @@
+﻿@rendermode InteractiveServer
+@inject IJSRuntime JS
+
+<script>
+
+
+    function hideDiv() {
+    var div = document.getElementById('sidebardiv');
+    if (div) {
+    div.style.display = 'none'; // Hides the div
+    }
+    }
+    function showDiv() {
+    var div = document.getElementById('sidebardiv');
+    if (div) {
+    div.style.display = 'block'; // Hides the div
+    }
+    }
+</script>
+
+@if(btn == true){
+    <div style="background-color: black; border-radius: 50%;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="Blue" class="bi bi-arrow-left-right" viewBox="0 0 16 16" role="button" @onclick="HideSidebar" style="padding: 10% 10% 10% 10%">
+            <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5" />
+        </svg>
+    </div>
+}
+else{
+    <div style="background-color: black; border-radius: 50%;">
+        <svg xmlns="http://www.w3.org/2000/svg" width="30" height="30" fill="Blue" class="bi bi-arrow-left-right" viewBox="0 0 16 16" role="button" @onclick="ShowSidebar" style="padding: 10% 10% 10% 10%">
+            <path fill-rule="evenodd" d="M1 11.5a.5.5 0 0 0 .5.5h11.793l-3.147 3.146a.5.5 0 0 0 .708.708l4-4a.5.5 0 0 0 0-.708l-4-4a.5.5 0 0 0-.708.708L13.293 11H1.5a.5.5 0 0 0-.5.5m14-7a.5.5 0 0 1-.5.5H2.707l3.147 3.146a.5.5 0 1 1-.708.708l-4-4a.5.5 0 0 1 0-.708l4-4a.5.5 0 1 1 .708.708L2.707 4H14.5a.5.5 0 0 1 .5.5" />
+        </svg>
+    </div>
+}
+
+
+
+
+
+
+@code {
+    bool btn = true;
+
+    public async Task HideSidebar(){
+        await JS.InvokeVoidAsync("hideDiv");
+        btn = false;
+    }
+
+    public async Task ShowSidebar()
+    {
+        await JS.InvokeVoidAsync("showDiv");
+        btn = true;
+    }
+}

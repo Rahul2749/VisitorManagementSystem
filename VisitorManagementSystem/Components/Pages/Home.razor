@@ -1,0 +1,106 @@
+﻿@page "/"
+@layout VisitorManagementSystem.Components.Layout.HomePage
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize(Roles = "Admin, User, Security")]
+<PageTitle>Home</PageTitle>
+
+
+<style>
+   
+   /* a {
+    text-decoration: none;
+    color: #eee;
+    }*/
+
+
+    .hero-video {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        object-fit: cover;
+        z-index: -1;
+    }
+
+    
+    .hero-text {
+        position: absolute;
+        top: 50%;
+        left: 58%;
+        transform: translate(-50%, -50%);
+        text-align: center;
+        color: #fff; 
+        opacity: 0.7;
+        display: none;
+    }
+
+    @@media (max-width: 768px) {
+        .hero-text {
+            overflow-y: auto;
+            overflow-x: auto;
+            position: absolute;
+            font-size: 10px;
+        }
+    }
+
+    @@media (max-width: 480px) {
+        .hero-text {
+            display: none;
+        }
+    }
+    @@media (min-width: 640px) {
+     .hero-text {
+            display: block;
+            overflow-y: auto;
+            overflow-x: auto;
+
+      }
+}
+</style>
+
+
+@*
+    <div class="row">
+
+    <div class="col-12">
+        <h2 class="fw-bolder">Welcome to <span class="text-danger">VMS</span></h2>
+    </div>
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <span>You are not logged in. Please <a class="fw-bolder" href="/login">Click Here</a> to login.</span>
+                    </NotAuthorized>
+                    <Authorized>
+                        <span>Logged in as <b>@context.User.Identity.Name</b>, <a class="fw-bolder" href="/logout"> Click Here</a> to logout.</span>
+                    </Authorized>
+                </AuthorizeView>
+            </div>
+        </div>
+    </div>
+</div>
+*@
+
+<style>
+
+</style>
+
+<div class="container-fluid">
+
+  <video autoplay muted loop playsinline preload="metadata" webkit-playsinline="true" class="object-cover w-full h-screen relative hero-video">
+        @* <source src="https://videos.ctfassets.net/zlhl2y58oyef/4YVZpPVtl3WJaHYEJvdbor/2c7642684ecbedc392feb5640e12ce04/KohlerEnergy_HAL_Master_16mbits_sec.mp4"> *@
+        <source src="https://videos.ctfassets.net/zlhl2y58oyef/luQI1610SuDP1IVN7knx1/7795fe528b168f8547b6ae907961da87/Rehlko_External_Anthem_30_16x9.mp4">
+        @* <source src="https://youtu.be/qV0zdndSMuQ"> *@
+       @*  <iframe width="100%" height="100%" src="https://www.youtube.com/embed/qV0zdndSMuQ" frameborder="0" allowfullscreen></iframe> *@
+  </video>
+
+  
+</div>
+<div class="container-fluid">
+    <div class="absolute hero-text">
+      @*   <h1 class="fs-4"><p>Kohler Energy is now Rehlko</p></h1> *@
+        @* <h5 class="fs-6"><p>We're redefining energy resilience with cleaner solutions—for individuals, businesses, and communities.</p></h5> *@
+    </div>
+</div>

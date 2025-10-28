@@ -1,0 +1,135 @@
+﻿@inherits LayoutComponentBase
+
+
+@using VisitorManagementSystem.Components.Pages
+@using VisitorManagementSystem.Components.Pages.Shared
+@using VisitorManagementSystem.Data
+@inject IVDataService VDataService
+@inject VMSDbContext vmsDbContext
+
+
+<div class="page">
+
+    <AuthorizeView>
+        <Authorized>
+            <div class="d-flex">
+                <div class="sidebar" id="sidebardiv">
+                    <NavMenu />
+                </div>
+                <div class="sidebarHideDivBtn">
+                    <SideBarBtn />
+                </div>
+            </div>
+            
+
+        </Authorized>
+    </AuthorizeView>
+
+    <main>
+        
+        <div class="top-row">
+
+
+           
+            <AuthorizeView>
+                <NotAuthorized>
+                    <h6 class="start-aligned">Please Login!</h6>
+                </NotAuthorized>
+                <Authorized>
+                    <h6 class="start-aligned">Welcome! <b><!--@context.User.Identity.Name--> @userName</b></h6>
+                </Authorized>
+            </AuthorizeView>
+            
+             <AuthorizeView>
+                <Authorized>@*
+                    <form class="d-flex">
+                        <input class="form-control me-2" type="search" placeholder="Search" aria-label="Search">
+                        <button class="btn btn-outline-success" type="submit">Search</button>
+                    </form>*@
+                </Authorized>
+            </AuthorizeView>
+
+            <div style="text-shadow: 1px 1px 2px rgba(0,0,0,0.5);font-family:'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;" class="fs-6 mx-4">
+                    <DigitalClock />
+                </div>
+           @*  <a href="https://kohlerenergy.com/rehlko" target="_blank" >Help</a> *@
+           <UserManual />
+
+            <AuthorizeView>
+                <NotAuthorized>
+                    <a href="/login">Login</a>
+
+                </NotAuthorized>
+                <Authorized>
+                    <a href="/logout">Logout</a>
+                </Authorized>
+            </AuthorizeView>
+        </div>
+
+        <article class="content px-4">
+            @Body
+        </article>
+
+
+        <AuthorizeView>
+            
+            <Authorized>
+                <div class="bottom-row border-top">
+                    <div class="container bottom-0" style="margin: 0!important">
+                        <footer class="d-flex flex-wrap justify-content-between align-items-center py-0 my-0  col-12">
+                            <a href="/" class="col-md-2 col-sm-4 col-6 d-flex align-items-center justify-content-center mb-0 mb-md-0 me-md-auto link-body-emphasis text-decoration-none mx-0">
+                                <svg class="bi me-2 m-0" width="40" height="32"><img src="/RehlkoLogo/rehlko_logo_horiz_new_energy_blue_RGB.png" width="120px" /></svg>
+                            </a>
+                            <p class="col-md-3 col-sm-4 col-6 mb-0 text-body-secondary">&copy; 2024 Company, Inc</p>
+
+                            <ul class="nav col-md-7 col-sm-12 justify-content-end">
+                                <li class="nav-item"><a href="#" class="nav-link px-2 text-body-secondary">Home</a></li>
+                                <li class="nav-item"><a href="dashboard" class="nav-link px-2 text-body-secondary">Dashboard</a></li>
+                                <li class="nav-item"><a href="visitorRequest" class="nav-link px-2 text-body-secondary">Approvals</a></li>
+
+                                <li class="nav-item"><a href="https://kohlerenergy.com/rehlko" class="nav-link px-2 text-body-secondary" target="_blank">About</a></li>
+                            </ul>
+                        </footer>
+                    </div>
+                </div>
+            </Authorized>
+        </AuthorizeView>
+        
+
+
+       
+        
+    </main>
+
+   
+</div>
+
+<div id="blazor-error-ui">
+    An unhandled error has occurred.
+    <a href="" class="reload">Reload</a>
+    <a class="dismiss">🗙</a>
+</div>
+
+
+@code{
+    
+    
+
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+
+    private string? userName;
+
+    protected override async Task OnInitializedAsync()
+    {
+        
+        var authenticationState = await authenticationStateTask;
+        var empData = vmsDbContext.Employee.Where(x => x.EmpEmail.ToLower() == authenticationState.User.Identity.Name).FirstOrDefault();
+        if(empData is not null)
+        {
+            userName = empData!.EmpName;
+        }
+        
+    }
+}

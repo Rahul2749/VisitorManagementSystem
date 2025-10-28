@@ -1,0 +1,29 @@
+﻿@page "/showtempdata"
+@inject HttpClient Http
+
+
+
+<h3>ShowTempData</h3>
+
+
+@if(vData == null){
+   <label>Loading...</label>
+}
+else if(vData.Count == 0){
+    <label>No Data</label>
+}
+
+else{
+    foreach (var v in vData)
+    {
+        <li>@v.FirstName @v.LastName</li>
+    }
+}
+
+@code {
+    List<VisitorMasterModel>? vData = null;
+
+    protected override async Task OnInitializedAsync(){
+        vData = await Http.GetFromJsonAsync<List<VisitorMasterModel>>("https://localhost:7265/api/showdata");
+    }
+}

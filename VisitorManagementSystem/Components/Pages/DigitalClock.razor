@@ -1,0 +1,35 @@
+﻿@page "/digitalclock"
+
+@rendermode InteractiveServer
+
+
+@using System.Timers
+
+
+
+
+<h4 style="color: #1d1717">@now.ToString("dd-MMM-yyyy") @now.ToString("hh:mm:ss tt")</h4>
+
+@code {
+    DateTime now = DateTime.Now;
+
+
+    protected override void OnInitialized()
+    {
+        var timer = new Timer(1000); // 1000ms = 1s
+        timer.Elapsed += (sender, eventArgs) => InvokeAsync(UpdateClock);
+        timer.Enabled = true;
+    }
+
+
+    private async Task UpdateClock()
+    {
+        now = DateTime.Now;
+        
+
+        _ = InvokeAsync(() =>           // Renders the screen when message to be set
+        {
+            StateHasChanged();
+        });
+    }
+}
